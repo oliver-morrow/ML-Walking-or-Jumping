@@ -19,7 +19,7 @@ def label_data(data_fp, label):
     return df
 
 
-# READING CSV files into data frames (replace the placeholders with your actual file paths)
+# READING CSV files into data frames
 file_paths = {
     'Oliver': ['meta/oliver_walking.csv', 'meta/oliver_jumping.csv'],
     'Matthew': ['meta/matthew_walking.csv', 'meta/matthew_jumping.csv'],
@@ -133,7 +133,7 @@ extraction has been performed, you will be required to apply a normalization tec
 preventing features with larger scales from disproportionately influencing the results. Common
 normalization techniques are min-max scaling, z-score standardization, etc.
 '''
-# FEATURE Extraction AND NORMALIZATION
+# FEATURE EXTRACTION
 features = pd.DataFrame(columns=['mean','std','max',
                                  'min','median','skew',
                                  'kurtosis','energy','rms', 

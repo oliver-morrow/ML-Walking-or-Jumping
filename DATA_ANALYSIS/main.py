@@ -7,7 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-from sklearn.externals import joblib
+# from sklearn.externals import joblib
 
 # FUNCTION to label data
 def label_data(data_fp, label):
@@ -34,8 +34,7 @@ matthew_jumping_labeled = label_data(file_paths['Matthew'][1], 1.0)
 daniel_jumping_labeled = label_data(file_paths['Daniel'][1], 1.0)
 
 # SHUFFLE data frames in 5 second inteverals
-def shuffle_data(df, time = 'Time (s)', window_size=5):
-
+def shuffle_data(df, time='Time (s)', window_size=5):
     # list to hold individual 5 second windows
     windows = []
     # initialize window time variables
@@ -49,13 +48,14 @@ def shuffle_data(df, time = 'Time (s)', window_size=5):
         start_time = end_time
         end_time += window_size
 
-    # shuffle the windows
-    windows_shuffled = np.random.shuffle(windows)
+    # shuffle the windows IN PLACE
+    np.random.shuffle(windows)
 
     # concatenate into a single dataframe
-    shuffled_df = pd.concat(windows_shuffled)
+    shuffled_df = pd.concat(windows)
 
     return shuffled_df
+
 
 
 # shuffle the data
@@ -103,19 +103,22 @@ with h5py.File('data.h5', 'w') as f:
 fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
 
 # Plotting walking data
-walking_data = walking_df[['Time (s)', 'X', 'Y', 'Z']]
-walking_data.plot(x='Time (s)', y='X', ax=axes[0, 0], title='Walking - X axis')
-walking_data.plot(x='Time (s)', y='Y', ax=axes[0, 1], title='Walking - Y axis')
-walking_data.plot(x='Time (s)', y='Z', ax=axes[0, 2], title='Walking - Z axis')
+walking_data_sorted = walking_df.sort_values(by='Time (s)')
+# walking_data_sorted = walking_df[['Time (s)', 'Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']]
+walking_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[0, 0], title='Walking - X acceleration')
+walking_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[0, 1], title='Walking - Y acceleration')
+walking_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[0, 2], title='Walking - Z acceleration')
 
 # Plotting jumping data
-jumping_data = jumping_df[['Time (s)', 'X', 'Y', 'Z']]
-jumping_data.plot(x='Time (s)', y='X', ax=axes[1, 0], title='Jumping - X axis')
-jumping_data.plot(x='Time (s)', y='Y', ax=axes[1, 1], title='Jumping - Y axis')
-jumping_data.plot(x='Time (s)', y='Z', ax=axes[1, 2], title='Jumping - Z axis')
+jumping_data_sorted = jumping_df.sort_values(by='Time (s)')
+# jumping_data = jumping_df[['Time (s)', 'Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']]
+jumping_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[1, 0], title='Jumping - X acceleration')
+jumping_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[1, 1], title='Jumping - Y acceleration')
+jumping_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[1, 2], title='Jumping - Z acceleration')
 
 plt.tight_layout()
 plt.show()
+
 
 ############################################################################################################
 
@@ -134,64 +137,89 @@ preventing features with larger scales from disproportionately influencing the r
 normalization techniques are min-max scaling, z-score standardization, etc.
 '''
 # FEATURE EXTRACTION
-features = pd.DataFrame(columns=['mean','std','max',
-                                 'min','median','skew',
-                                 'kurtosis','energy','rms', 
-                                 'range', 'variance'])
+# Define the window size for rolling calculations
 window_size = 5
-features['mean'] = walking_df.rolling(window=window_size).mean()
-features['std'] = walking_df.rolling(window=window_size).std()
-features['max'] = walking_df.rolling(window=window_size).max()
-features['min'] = walking_df.rolling(window=window_size).min()
-features['median'] = walking_df.rolling(window=window_size).median()
-features['skew'] = walking_df.rolling(window=window_size).skew()
-features['kurtosis'] = walking_df.rolling(window=window_size).kurtosis()
-features['energy'] = walking_df.rolling(window=window_size).apply(lambda x: np.sum(x**2))
-features['rms'] = walking_df.rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)))
 
-features['mean'] = jumping_df.rolling(window=window_size).mean()
-features['std'] = jumping_df.rolling(window=window_size).std()
-features['max'] = jumping_df.rolling(window=window_size).max()
-features['min'] = jumping_df.rolling(window=window_size).min()
-features['median'] = jumping_df.rolling(window=window_size).median()
-features['skew'] = jumping_df.rolling(window=window_size).skew()
-features['kurtosis'] = jumping_df.rolling(window=window_size).kurtosis()
-features['energy'] = jumping_df.rolling(window=window_size).apply(lambda x: np.sum(x**2))
-features['rms'] = jumping_df.rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)))
+# Create a DataFrame to hold the features
+features = pd.DataFrame()
 
-newfeatures = features.dropna()
-print(newfeatures)
+# Calculate rolling features for 'Absolute acceleration (m/s^2)'
+features['mean'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).mean()
+features['std'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).std()
+features['max'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).max()
+features['min'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).min()
+features['median'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).median()
+features['skew'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).skew()
+# features['kurtosis'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).kurtosis()
+features['variance'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).var().dropna()
 
-# NORMALIZATION
-scaler = MinMaxScaler()
-normalized_features = scaler.fit_transform(newfeatures)
-print(normalized_features)
+features['energy'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
 
-'''
-Using the features from the preprocessed training set, train a logistic regression model to classify
-the data into 'walking' and 'jumping' classes. Once training is complete, apply it on the test set
-and record the accuracy. You should also monitor and record the training curves during the
-training process. Note that during the training phase, your test set must not leak into the training
-set (no overlap between the segments used for training and testing).
-'''
-# TRAINING logistic regression model
-X_train = normalized_features
-y_train = np.concatenate((np.zeros(len(walking_train)), np.ones(len(jumping_train))))
+features['rms'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
 
-# Create and train the logistic regression model
-model = LogisticRegression()
-model.fit(X_train, y_train)
+# Calculate the range as max - min
+features['range'] = features['max'] - features['min']
 
-# TESTING logistic regression model
-X_test = scaler.transform(features.dropna())
-y_test = np.concatenate((np.zeros(len(walking_test)), np.ones(len(jumping_test))))
+# Drop NaN values from the DataFrame
+features = features.dropna().reset_index(drop=True)
 
-# Predict the classes for the test set
-y_pred = model.predict(X_test)
+# Now print the features DataFrame
+print(features)
 
-# Calculate the accuracy of the model
-accuracy = accuracy_score(y_test, y_pred)
-print("Accuracy:", accuracy)
+# Calculate rolling features for 'Absolute acceleration (m/s^2)'
+features['mean'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).mean()
+features['std'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).std()
+features['max'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).max()
+features['min'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).min()
+features['median'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).median()
+features['skew'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).skew()
+# features['kurtosis'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).kurtosis()
+features['variance'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).var().dropna()
 
-# Save the model to a joblib file
-joblib.dump(model, 'logistic_regression_model.joblib')
+features['energy'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
+
+features['rms'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
+
+# Calculate the range as max - min
+features['range'] = features['max'] - features['min']
+
+# Drop NaN values from the DataFrame
+features = features.dropna().reset_index(drop=True)
+
+# Now print the features DataFrame
+print(features)
+
+
+# # NORMALIZATION
+# scaler = MinMaxScaler()
+# normalized_features = scaler.fit_transform(newfeatures)
+# print(normalized_features)
+
+# '''
+# Using the features from the preprocessed training set, train a logistic regression model to classify
+# the data into 'walking' and 'jumping' classes. Once training is complete, apply it on the test set
+# and record the accuracy. You should also monitor and record the training curves during the
+# training process. Note that during the training phase, your test set must not leak into the training
+# set (no overlap between the segments used for training and testing).
+# '''
+# # TRAINING logistic regression model
+# X_train = normalized_features
+# y_train = np.concatenate((np.zeros(len(walking_train)), np.ones(len(jumping_train))))
+
+# # Create and train the logistic regression model
+# model = LogisticRegression()
+# model.fit(X_train, y_train)
+
+# # TESTING logistic regression model
+# X_test = scaler.transform(features.dropna())
+# y_test = np.concatenate((np.zeros(len(walking_test)), np.ones(len(jumping_test))))
+
+# # Predict the classes for the test set
+# y_pred = model.predict(X_test)
+
+# # Calculate the accuracy of the model
+# accuracy = accuracy_score(y_test, y_pred)
+# print("Accuracy:", accuracy)
+
+# # Save the model to a joblib file
+# joblib.dump(model, 'logistic_regression_model.joblib')

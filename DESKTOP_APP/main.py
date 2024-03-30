@@ -1,29 +1,39 @@
 import sys
 import pandas as pd
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, 
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QDialog, 
                              QWidget, QFileDialog, QLabel, QTableWidget, QTableWidgetItem, QMessageBox)
 from joblib import load
+from PyQt5.QtCore import Qt
 
 class CSVClassifierApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.title = 'CSV Classifier'
+        self.title = 'ELEC 292 CSV Classifier'
         self.dataProcessed = False  # Flag to track if the CSV has been processed
         self.initUI()
     
     def initUI(self):
         self.setWindowTitle(self.title)
-        self.setGeometry(100, 100, 800, 600)
+        self.setFixedSize(900, 500)
         
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.main_layout = QVBoxLayout(self.central_widget)
 
-        # Welcome paragraph
-        self.welcome_label = QLabel("Welcome to the CSV Classifier. Please open a CSV file to begin.")
+        # Welcome title
+        self.welcome_label = QLabel("Logistic Labeller")
         self.welcome_label.setObjectName("welcomeLabel")  # Set the object name for styling
+        self.welcome_label.setAlignment(Qt.AlignCenter)
         self.main_layout.addWidget(self.welcome_label)
+
+        self.button = QPushButton("Need Help? Click here!", self)
+        self.button.clicked.connect(self.showHelpWindow)
         
+        # Create a horizontal layout with the button centered
+        help_button_layout = QHBoxLayout()
+        help_button_layout.addWidget(self.button, 0, Qt.AlignCenter)  # Center the button in the layout
+        self.main_layout.addLayout(help_button_layout)
+
         # Horizontal layout for tables
         self.tables_layout = QHBoxLayout()
         self.main_layout.addLayout(self.tables_layout)
@@ -38,15 +48,26 @@ class CSVClassifierApp(QMainWindow):
         self.modified_table_widget.setMaximumSize(600, 400)
         self.tables_layout.addWidget(self.modified_table_widget)
 
+        self.button_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.button_layout)
+
         # Button for opening and processing CSV
         self.open_button = QPushButton('Open CSV', self)
         self.open_button.clicked.connect(self.openFileNameDialog)
-        self.main_layout.addWidget(self.open_button)
+        self.open_button.setObjectName("selectButton")
+        self.button_layout.addWidget(self.open_button)
 
         # Button for saving the modified CSV
         self.save_button = QPushButton('Save Classified CSV', self)
         self.save_button.clicked.connect(self.onSaveButtonClick)
-        self.main_layout.addWidget(self.save_button)
+        self.save_button.setObjectName("saveButton")
+        self.button_layout.addWidget(self.save_button)
+
+        self.acknowledgements_layout = QLabel("This app was created by Oliver Morrow, Matthew Szalawiga, and Daniel Heron. ELEC 292, W24")
+        self.acknowledgements_layout.setAlignment(Qt.AlignCenter)
+        self.acknowledgements_layout.setObjectName("acknowledgements")  # Set the object name for styling
+        self.main_layout.addWidget(self.acknowledgements_layout)
+
 
         self.loadStyles()
     
@@ -93,6 +114,16 @@ class CSVClassifierApp(QMainWindow):
         if fileName:
             self.modified_data.to_csv(fileName, index=False)
             print(f"Classified CSV saved as: {fileName}")
+
+    def showHelpWindow(self):
+        appInstructions = """
+        <h1>App Instructions</h1>
+        <p>Follow the steps below to use this app!</p>
+        <ol>
+            <li>Click the "Open CSV" button to select a CSV file</li>
+            <li>Wait for the file to be processed</li>
+            <li>Click the "Save Classified CSV" button to save the classified file</li>"""
+        QMessageBox.information(self, "Help", appInstructions)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -9,6 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 # from sklearn.externals import joblib
 
+############################################################################################################
 # FUNCTION to label data
 def label_data(data_fp, label):
     # read into dataframe
@@ -18,7 +19,7 @@ def label_data(data_fp, label):
 
     return df
 
-
+############################################################################################################
 # READING CSV files into data frames
 file_paths = {
     'Oliver': ['meta/oliver_walking.csv', 'meta/oliver_jumping.csv'],
@@ -33,6 +34,7 @@ oliver_jumping_labeled = label_data(file_paths['Oliver'][1], 1.0)
 matthew_jumping_labeled = label_data(file_paths['Matthew'][1], 1.0)
 daniel_jumping_labeled = label_data(file_paths['Daniel'][1], 1.0)
 
+############################################################################################################
 # SHUFFLE data frames in 5 second inteverals
 def shuffle_data(df, time='Time (s)', window_size=5):
     # list to hold individual 5 second windows
@@ -56,8 +58,7 @@ def shuffle_data(df, time='Time (s)', window_size=5):
 
     return shuffled_df
 
-
-
+############################################################################################################
 # shuffle the data
 oliver_walking_shuffled = shuffle_data(oliver_walking_labeled)
 matthew_walking_shuffled = shuffle_data(matthew_walking_labeled)
@@ -67,14 +68,17 @@ oliver_jumping_shuffled = shuffle_data(oliver_jumping_labeled)
 matthew_jumping_shuffled = shuffle_data(matthew_jumping_labeled)
 daniel_jumping_shuffled = shuffle_data(daniel_jumping_labeled)
 
+############################################################################################################
 # combine dataframes by activity
 walking_df = pd.concat([oliver_walking_shuffled, matthew_walking_shuffled, daniel_walking_shuffled], ignore_index=True)
 jumping_df = pd.concat([oliver_jumping_shuffled, matthew_jumping_shuffled, daniel_jumping_shuffled], ignore_index=True)
 
+############################################################################################################
 # SPLIT data into training and testing sets
 walking_train, walking_test = train_test_split(walking_df, test_size=0.1)
 jumping_train, jumping_test = train_test_split(jumping_df, test_size=0.1)
 
+############################################################################################################
 # SAVE data to HDF5 file
 with h5py.File('data.h5', 'w') as f:
     G1 = f.create_group('/oliver')
@@ -98,45 +102,12 @@ with h5py.File('data.h5', 'w') as f:
     G42.create_dataset('jumping_test', data=jumping_test)
 
 ############################################################################################################
-
-# PLOT data for walking and jumping, all three axes
-fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
-
-# Plotting walking data
-walking_data_sorted = walking_df.sort_values(by='Time (s)')
-# walking_data_sorted = walking_df[['Time (s)', 'Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']]
-walking_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[0, 0], title='Walking - X acceleration')
-walking_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[0, 1], title='Walking - Y acceleration')
-walking_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[0, 2], title='Walking - Z acceleration')
-
-# Plotting jumping data
-jumping_data_sorted = jumping_df.sort_values(by='Time (s)')
-# jumping_data = jumping_df[['Time (s)', 'Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']]
-jumping_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[1, 0], title='Jumping - X acceleration')
-jumping_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[1, 1], title='Jumping - Y acceleration')
-jumping_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[1, 2], title='Jumping - Z acceleration')
-
-plt.tight_layout()
-plt.show()
-
-
-############################################################################################################
-
 # Moving average filter
 def moving_average_filter(data, window_size=5):
     return data.rolling(window=window_size).mean()
 
 ############################################################################################################
-
-'''
-From each time window (the 5-second segments that you created and stored in the HDF5 file),
-extract a minimum of 10 different features. These features could be maximum, minimum, range,
-mean, median, variance, skewness, etc. Additional features may be explored as well. After feature
-extraction has been performed, you will be required to apply a normalization technique for
-preventing features with larger scales from disproportionately influencing the results. Common
-normalization techniques are min-max scaling, z-score standardization, etc.
-'''
-# FEATURE EXTRACTION
+# FEATURE EXTRACTION & NORMALIZATION
 # Define the window size for rolling calculations
 window_size = 5
 
@@ -189,37 +160,52 @@ features = features.dropna().reset_index(drop=True)
 # Now print the features DataFrame
 print(features)
 
+# NORMALIZATION
+scaler = MinMaxScaler()
+normalized_features = scaler.fit_transform(features.dropna())
+print(normalized_features)
 
-# # NORMALIZATION
-# scaler = MinMaxScaler()
-# normalized_features = scaler.fit_transform(newfeatures)
-# print(normalized_features)
+###########################################################################################################
+# TRAINING logistic regression model
+train_data = pd.concat([walking_train, jumping_train])
+test_data = pd.concat([walking_test, jumping_test])
 
-# '''
-# Using the features from the preprocessed training set, train a logistic regression model to classify
-# the data into 'walking' and 'jumping' classes. Once training is complete, apply it on the test set
-# and record the accuracy. You should also monitor and record the training curves during the
-# training process. Note that during the training phase, your test set must not leak into the training
-# set (no overlap between the segments used for training and testing).
-# '''
-# # TRAINING logistic regression model
-# X_train = normalized_features
-# y_train = np.concatenate((np.zeros(len(walking_train)), np.ones(len(jumping_train))))
+# Separate features and labels
+X_train = train_data.drop('label', axis=1)
+y_train = train_data['label']
+X_test = test_data.drop('label', axis=1)
+y_test = test_data['label']
 
-# # Create and train the logistic regression model
-# model = LogisticRegression()
-# model.fit(X_train, y_train)
+# Create a Logistic Regression model
+model = LogisticRegression()
 
-# # TESTING logistic regression model
-# X_test = scaler.transform(features.dropna())
-# y_test = np.concatenate((np.zeros(len(walking_test)), np.ones(len(jumping_test))))
+# Train the model
+model.fit(X_train, y_train)
 
-# # Predict the classes for the test set
-# y_pred = model.predict(X_test)
+# Now the model is trained and you can use it to make predictions
+predictions = model.predict(X_test)
 
-# # Calculate the accuracy of the model
-# accuracy = accuracy_score(y_test, y_pred)
-# print("Accuracy:", accuracy)
+# You can also measure the accuracy of your model
+accuracy = accuracy_score(y_test, predictions)
+print(f'Model Accuracy: {accuracy}')
 
-# # Save the model to a joblib file
-# joblib.dump(model, 'logistic_regression_model.joblib')
+###########################################################################################################
+# PLOT data for walking and jumping, all three axes
+fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
+
+# Plotting walking data
+walking_data_sorted = walking_df.sort_values(by='Time (s)')
+# walking_data_sorted = walking_df[['Time (s)', 'Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']]
+walking_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[0, 0], title='Walking - X acceleration')
+walking_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[0, 1], title='Walking - Y acceleration')
+walking_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[0, 2], title='Walking - Z acceleration')
+
+# Plotting jumping data
+jumping_data_sorted = jumping_df.sort_values(by='Time (s)')
+# jumping_data = jumping_df[['Time (s)', 'Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']]
+jumping_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[1, 0], title='Jumping - X acceleration')
+jumping_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[1, 1], title='Jumping - Y acceleration')
+jumping_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[1, 2], title='Jumping - Z acceleration')
+
+plt.tight_layout()
+plt.show()

@@ -3,11 +3,13 @@ import numpy as np
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 import h5py
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-# from sklearn.externals import joblib
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import make_pipeline
+from sklearn.metrics import recall_score
 
 ############################################################################################################
 # FUNCTION to label data
@@ -18,6 +20,18 @@ def label_data(data_fp, label):
     df['label'] = label
 
     return df
+
+def impute_missing_values(df, strategy='mean'):
+    # create an imputer object with a mean filling strategy
+    imputer = SimpleImputer(strategy=strategy)
+    # fit the imputer object on the data
+    imputer.fit(df)
+    # transform the data
+    imputed_data = imputer.transform(df)
+    # convert back to a data frame
+    imputed_df = pd.DataFrame(imputed_data, columns=df.columns)
+
+    return imputed_df
 
 ############################################################################################################
 # READING CSV files into data frames
@@ -33,6 +47,15 @@ daniel_walking_labeled = label_data(file_paths['Daniel'][0], 0.0)
 oliver_jumping_labeled = label_data(file_paths['Oliver'][1], 1.0)
 matthew_jumping_labeled = label_data(file_paths['Matthew'][1], 1.0)
 daniel_jumping_labeled = label_data(file_paths['Daniel'][1], 1.0)
+
+# IMPUTE missing values
+oliver_walking_labeled = impute_missing_values(oliver_walking_labeled)
+matthew_walking_labeled = impute_missing_values(matthew_walking_labeled)
+daniel_walking_labeled = impute_missing_values(daniel_walking_labeled)
+
+oliver_jumping_labeled = impute_missing_values(oliver_jumping_labeled)
+matthew_jumping_labeled = impute_missing_values(matthew_jumping_labeled)
+daniel_jumping_labeled = impute_missing_values(daniel_jumping_labeled)
 
 ############################################################################################################
 # SHUFFLE data frames in 5 second inteverals
@@ -70,6 +93,7 @@ daniel_jumping_shuffled = shuffle_data(daniel_jumping_labeled)
 
 ############################################################################################################
 # combine dataframes by activity
+
 walking_df = pd.concat([oliver_walking_shuffled, matthew_walking_shuffled, daniel_walking_shuffled], ignore_index=True)
 jumping_df = pd.concat([oliver_jumping_shuffled, matthew_jumping_shuffled, daniel_jumping_shuffled], ignore_index=True)
 
@@ -112,61 +136,58 @@ def moving_average_filter(data, window_size=5):
 window_size = 5
 
 # Create a DataFrame to hold the features
-features = pd.DataFrame()
+features_walk = pd.DataFrame(columns=['mean', 'std', 'max', 'min', 'median', 'skew', 'variance', 'energy', 'rms', 'range'])
 
 # Calculate rolling features for 'Absolute acceleration (m/s^2)'
-features['mean'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).mean()
-features['std'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).std()
-features['max'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).max()
-features['min'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).min()
-features['median'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).median()
-features['skew'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).skew()
+features_walk['mean'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).mean()
+features_walk['std'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).std()
+features_walk['max'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).max()
+features_walk['min'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).min()
+features_walk['median'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).median()
+features_walk['skew'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).skew()
 # features['kurtosis'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).kurtosis()
-features['variance'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).var().dropna()
-
-features['energy'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
-
-features['rms'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
+features_walk['variance'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).var().dropna()
+features_walk['energy'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
+features_walk['rms'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
 
 # Calculate the range as max - min
-features['range'] = features['max'] - features['min']
+features_walk['range'] = features_walk['max'] - features_walk['min']
 
 # Drop NaN values from the DataFrame
-features = features.dropna().reset_index(drop=True)
+newfeatures_walk = features_walk.dropna().reset_index(drop=True)
 
 # Now print the features DataFrame
-print(features)
+print(newfeatures_walk)
+
+
+features_jump = pd.DataFrame(columns=['mean', 'std', 'max', 'min', 'median', 'skew', 'variance', 'energy', 'rms', 'range'])
 
 # Calculate rolling features for 'Absolute acceleration (m/s^2)'
-features['mean'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).mean()
-features['std'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).std()
-features['max'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).max()
-features['min'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).min()
-features['median'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).median()
-features['skew'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).skew()
+features_jump['mean'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).mean()
+features_jump['std'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).std()
+features_jump['max'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).max()
+features_jump['min'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).min()
+features_jump['median'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).median()
+features_jump['skew'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).skew()
 # features['kurtosis'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).kurtosis()
-features['variance'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).var().dropna()
-
-features['energy'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
-
-features['rms'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
-
-# Calculate the range as max - min
-features['range'] = features['max'] - features['min']
+features_jump['variance'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).var().dropna()
+features_jump['energy'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
+features_jump['rms'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
+features_jump['range'] = features_jump['max'] - features_jump['min']
 
 # Drop NaN values from the DataFrame
-features = features.dropna().reset_index(drop=True)
-
+newfeatures_jump = features_jump.dropna().reset_index(drop=True)
 # Now print the features DataFrame
-print(features)
+print(newfeatures_jump)
 
 # NORMALIZATION
-scaler = MinMaxScaler()
-normalized_features = scaler.fit_transform(features.dropna())
-print(normalized_features)
-
+scaler = StandardScaler()
+normalized_features_walk = scaler.fit_transform(newfeatures_walk)
+normalized_features_jump = scaler.fit_transform(newfeatures_jump)
+print(normalized_features_walk)
+print(normalized_features_jump)
 ###########################################################################################################
-# TRAINING logistic regression model
+# Concatenate training and testing datasets
 train_data = pd.concat([walking_train, jumping_train])
 test_data = pd.concat([walking_test, jumping_test])
 
@@ -177,35 +198,43 @@ X_test = test_data.drop('label', axis=1)
 y_test = test_data['label']
 
 # Create a Logistic Regression model
-model = LogisticRegression()
+model = LogisticRegression(max_iter=10000)
 
-# Train the model
+clf = make_pipeline(StandardScaler(), model)
+# Train the model with the imputed training data
 model.fit(X_train, y_train)
 
-# Now the model is trained and you can use it to make predictions
-predictions = model.predict(X_test)
+# Use the model to make predictions on the imputed test data
+y_pred = clf.predict(X_test)
+y_clf_prob = clf.predict_proba(X_test)
+# Measure the accuracy of your model using the original y_test labels
+print('y pred: ', y_pred)
+print('y_clf_prob: ', y_clf_prob)
 
-# You can also measure the accuracy of your model
-accuracy = accuracy_score(y_test, predictions)
-print(f'Model Accuracy: {accuracy}')
+accuracy = accuracy_score(y_test, y_pred)
+print('Accuracy: ', accuracy)
+
+recall = recall_score(y_test, y_pred)
+print('Recall: ', recall)
 
 ###########################################################################################################
 # PLOT data for walking and jumping, all three axes
-fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
+# fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
 
-# Plotting walking data
-walking_data_sorted = walking_df.sort_values(by='Time (s)')
-# walking_data_sorted = walking_df[['Time (s)', 'Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']]
-walking_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[0, 0], title='Walking - X acceleration')
-walking_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[0, 1], title='Walking - Y acceleration')
-walking_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[0, 2], title='Walking - Z acceleration')
+# smoothed_walking = moving_average_filter(walking_df, window_size=5).dropna().reset_index(drop=True)
+# smoothed_jumping = moving_average_filter(jumping_df, window_size=5).dropna().reset_index(drop=True)
 
-# Plotting jumping data
-jumping_data_sorted = jumping_df.sort_values(by='Time (s)')
-# jumping_data = jumping_df[['Time (s)', 'Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']]
-jumping_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[1, 0], title='Jumping - X acceleration')
-jumping_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[1, 1], title='Jumping - Y acceleration')
-jumping_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[1, 2], title='Jumping - Z acceleration')
+# # Plotting walking data
+# walking_data_sorted = smoothed_walking.sort_values(by='Time (s)')
+# walking_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[0, 0], title='Walking - X acceleration')
+# walking_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[0, 1], title='Walking - Y acceleration')
+# walking_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[0, 2], title='Walking - Z acceleration')
 
-plt.tight_layout()
-plt.show()
+# # Plotting jumping data
+# jumping_data_sorted = smoothed_jumping.sort_values(by='Time (s)')
+# jumping_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[1, 0], title='Jumping - X acceleration')
+# jumping_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[1, 1], title='Jumping - Y acceleration')
+# jumping_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[1, 2], title='Jumping - Z acceleration')
+
+# plt.tight_layout()
+# plt.show()

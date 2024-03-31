@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout
                              QWidget, QFileDialog, QLabel, QTableWidget, QTableWidgetItem, QMessageBox)
 from joblib import load
 from PyQt5.QtCore import Qt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 class CSVClassifierApp(QMainWindow):
     def __init__(self):
@@ -47,6 +49,10 @@ class CSVClassifierApp(QMainWindow):
         self.modified_table_widget = QTableWidget()
         self.modified_table_widget.setMaximumSize(600, 400)
         self.tables_layout.addWidget(self.modified_table_widget)
+
+        self.plot_button = QPushButton('Plot Data', self)
+        self.plot_button.clicked.connect(self.plotData)
+        self.main_layout.addWidget(self.plot_button, 0, Qt.AlignCenter)
 
         self.button_layout = QHBoxLayout()
         self.main_layout.addLayout(self.button_layout)
@@ -124,6 +130,32 @@ class CSVClassifierApp(QMainWindow):
             <li>Wait for the file to be processed</li>
             <li>Click the "Save Classified CSV" button to save the classified file</li>"""
         QMessageBox.information(self, "Help", appInstructions)
+
+    def plotData(self):
+        if not self.dataProcessed:
+            QMessageBox.warning(self, "Action Required", "Please process a CSV file before plotting.")
+            return
+        
+        # Assuming self.modified_data contains the data you want to plot
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Data Plot")
+        dialog.setFixedSize(600, 400)
+        layout = QVBoxLayout()
+
+        fig = Figure()
+        canvas = FigureCanvas(fig)
+        layout.addWidget(canvas)
+
+        ax = fig.add_subplot(111)
+        # Example of plotting first two columns against each other
+        # Modify according to your data structure
+        ax.scatter(self.modified_data.iloc[:, 0], self.modified_data.iloc[:, 1])
+        ax.set_title('Plot Title')
+        ax.set_xlabel('X-axis Label')
+        ax.set_ylabel('Y-axis Label')
+
+        dialog.setLayout(layout)
+        dialog.exec_()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

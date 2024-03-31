@@ -184,6 +184,7 @@ normalized_features_jump = all_features_normalized[num_walk:, :]
 
 print(normalized_features_walk.shape)
 print(normalized_features_jump.shape)
+
 ###########################################################################################################
 # Concatenate training and testing datasets
 train_data = pd.concat([walking_train, jumping_train])

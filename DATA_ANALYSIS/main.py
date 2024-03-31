@@ -21,17 +21,17 @@ def label_data(data_fp, label):
 
     return df
 
-def impute_missing_values(df, strategy='mean'):
-    # create an imputer object with a mean filling strategy
-    imputer = SimpleImputer(strategy=strategy)
-    # fit the imputer object on the data
-    imputer.fit(df)
-    # transform the data
-    imputed_data = imputer.transform(df)
-    # convert back to a data frame
-    imputed_df = pd.DataFrame(imputed_data, columns=df.columns)
+# def impute_missing_values(df, strategy='mean'):
+#     # create an imputer object with a mean filling strategy
+#     imputer = SimpleImputer(strategy=strategy)
+#     # fit the imputer object on the data
+#     imputer.fit(df)
+#     # transform the data
+#     imputed_data = imputer.transform(df)
+#     # convert back to a data frame
+#     imputed_df = pd.DataFrame(imputed_data, columns=df.columns)
 
-    return imputed_df
+#     return imputed_df
 
 ############################################################################################################
 # READING CSV files into data frames
@@ -48,14 +48,14 @@ oliver_jumping_labeled = label_data(file_paths['Oliver'][1], 1.0)
 matthew_jumping_labeled = label_data(file_paths['Matthew'][1], 1.0)
 daniel_jumping_labeled = label_data(file_paths['Daniel'][1], 1.0)
 
-# IMPUTE missing values
-oliver_walking_labeled = impute_missing_values(oliver_walking_labeled)
-matthew_walking_labeled = impute_missing_values(matthew_walking_labeled)
-daniel_walking_labeled = impute_missing_values(daniel_walking_labeled)
+# # IMPUTE missing values
+# oliver_walking_labeled = impute_missing_values(oliver_walking_labeled)
+# matthew_walking_labeled = impute_missing_values(matthew_walking_labeled)
+# daniel_walking_labeled = impute_missing_values(daniel_walking_labeled)
 
-oliver_jumping_labeled = impute_missing_values(oliver_jumping_labeled)
-matthew_jumping_labeled = impute_missing_values(matthew_jumping_labeled)
-daniel_jumping_labeled = impute_missing_values(daniel_jumping_labeled)
+# oliver_jumping_labeled = impute_missing_values(oliver_jumping_labeled)
+# matthew_jumping_labeled = impute_missing_values(matthew_jumping_labeled)
+# daniel_jumping_labeled = impute_missing_values(daniel_jumping_labeled)
 
 ############################################################################################################
 # SHUFFLE data frames in 5 second inteverals
@@ -128,64 +128,62 @@ with h5py.File('data.h5', 'w') as f:
 ############################################################################################################
 # Moving average filter
 def moving_average_filter(data, window_size=5):
-    return data.rolling(window=window_size).mean()
+    
+    data = data.iloc[:, 1:-1]
+
+    sma = data.rolling(window=window_size).mean()
+
+    sma = sma.dropna()
+
+    return sma
 
 ############################################################################################################
 # FEATURE EXTRACTION & NORMALIZATION
 # Define the window size for rolling calculations
-window_size = 5
-
 # Create a DataFrame to hold the features
-features_walk = pd.DataFrame(columns=['mean', 'std', 'max', 'min', 'median', 'skew', 'variance', 'energy', 'rms', 'range'])
+# Function to calculate features for a specific column
+def calculate_features(df, column_name, window_size=5):
+    features = pd.DataFrame()
+    features['mean_' + column_name] = df[column_name].rolling(window=window_size).mean()
+    features['std_' + column_name] = df[column_name].rolling(window=window_size).std()
+    features['max_' + column_name] = df[column_name].rolling(window=window_size).max()
+    features['min_' + column_name] = df[column_name].rolling(window=window_size).min()
+    features['median_' + column_name] = df[column_name].rolling(window=window_size).median()
+    features['skew_' + column_name] = df[column_name].rolling(window=window_size).skew()
+    features['variance_' + column_name] = df[column_name].rolling(window=window_size).var()
+    features['energy_' + column_name] = df[column_name].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
+    features['rms_' + column_name] = df[column_name].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
+    features['range_' + column_name] = features['max_' + column_name] - features['min_' + column_name]
+    return features.dropna()
 
-# Calculate rolling features for 'Absolute acceleration (m/s^2)'
-features_walk['mean'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).mean()
-features_walk['std'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).std()
-features_walk['max'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).max()
-features_walk['min'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).min()
-features_walk['median'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).median()
-features_walk['skew'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).skew()
-# features['kurtosis'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).kurtosis()
-features_walk['variance'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).var().dropna()
-features_walk['energy'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
-features_walk['rms'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
+# Feature extraction for walking and jumping datasets for x, y, and z accelerations
+feature_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']
+features_walk = pd.DataFrame()
+features_jump = pd.DataFrame()
 
-# Calculate the range as max - min
-features_walk['range'] = features_walk['max'] - features_walk['min']
+for column in feature_columns:
+    features_walk = pd.concat([features_walk, calculate_features(walking_df, column)], axis=1)
+    features_jump = pd.concat([features_jump, calculate_features(jumping_df, column)], axis=1)
 
-# Drop NaN values from the DataFrame
-newfeatures_walk = features_walk.dropna().reset_index(drop=True)
-
-# Now print the features DataFrame
-print(newfeatures_walk)
-
-
-features_jump = pd.DataFrame(columns=['mean', 'std', 'max', 'min', 'median', 'skew', 'variance', 'energy', 'rms', 'range'])
-
-# Calculate rolling features for 'Absolute acceleration (m/s^2)'
-features_jump['mean'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).mean()
-features_jump['std'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).std()
-features_jump['max'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).max()
-features_jump['min'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).min()
-features_jump['median'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).median()
-features_jump['skew'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).skew()
-# features['kurtosis'] = walking_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).kurtosis()
-features_jump['variance'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).var().dropna()
-features_jump['energy'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sum(x**2), raw=True)
-features_jump['rms'] = jumping_df['Absolute acceleration (m/s^2)'].rolling(window=window_size).apply(lambda x: np.sqrt(np.mean(x**2)), raw=True)
-features_jump['range'] = features_jump['max'] - features_jump['min']
-
-# Drop NaN values from the DataFrame
-newfeatures_jump = features_jump.dropna().reset_index(drop=True)
-# Now print the features DataFrame
-print(newfeatures_jump)
+# Drop any rows with NaN values that might occur due to rolling calculations
+features_walk = features_walk.dropna().reset_index(drop=True)
+features_jump = features_jump.dropna().reset_index(drop=True)
 
 # NORMALIZATION
+# Combine walking and jumping features for scaling
+all_features = pd.concat([features_walk, features_jump], axis=0)
+
+# Fit the scaler on all data then transform both walking and jumping features
 scaler = StandardScaler()
-normalized_features_walk = scaler.fit_transform(newfeatures_walk)
-normalized_features_jump = scaler.fit_transform(newfeatures_jump)
-print(normalized_features_walk)
-print(normalized_features_jump)
+all_features_normalized = scaler.fit_transform(all_features)
+
+# Split the normalized features back into walking and jumping
+num_walk = features_walk.shape[0]
+normalized_features_walk = all_features_normalized[:num_walk, :]
+normalized_features_jump = all_features_normalized[num_walk:, :]
+
+print(normalized_features_walk.shape)
+print(normalized_features_jump.shape)
 ###########################################################################################################
 # Concatenate training and testing datasets
 train_data = pd.concat([walking_train, jumping_train])
@@ -193,6 +191,10 @@ test_data = pd.concat([walking_test, jumping_test])
 
 # Separate features and labels
 X_train = train_data.drop('label', axis=1)
+
+# Print how many NaN's in X
+print(X_train.isnull().sum())
+
 y_train = train_data['label']
 X_test = test_data.drop('label', axis=1)
 y_test = test_data['label']
@@ -202,7 +204,7 @@ model = LogisticRegression(max_iter=10000)
 
 clf = make_pipeline(StandardScaler(), model)
 # Train the model with the imputed training data
-model.fit(X_train, y_train)
+clf.fit(X_train, y_train)
 
 # Use the model to make predictions on the imputed test data
 y_pred = clf.predict(X_test)

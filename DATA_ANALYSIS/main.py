@@ -143,8 +143,8 @@ for column in feature_columns:
     features_jump = pd.concat([features_jump, calculate_features(jumping_df, column)], axis=1)
 
 # Drop any rows with NaN values that might occur due to rolling calculations
-features_walk = features_walk.dropna().reset_index(drop=True)
-features_jump = features_jump.dropna().reset_index(drop=True)
+features_walk = features_walk.dropna()
+features_jump = features_jump.dropna()
 
 # NORMALIZATION
 # Combine walking and jumping features for scaling

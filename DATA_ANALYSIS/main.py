@@ -139,6 +139,9 @@ def moving_average_filter(data, window_size=5):
 
 ############################################################################################################
 # FEATURE EXTRACTION & NORMALIZATION
+
+features_walk = walking_df[['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']]
+features_jump = jumping_df[['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']]
 # Define the window size for rolling calculations
 # Create a DataFrame to hold the features
 # Function to calculate features for a specific column
@@ -186,38 +189,35 @@ print(normalized_features_walk.shape)
 print(normalized_features_jump.shape)
 
 ###########################################################################################################
-# Concatenate training and testing datasets
-train_data = pd.concat([walking_train, jumping_train])
-test_data = pd.concat([walking_test, jumping_test])
 
-# Separate features and labels
-X_train = train_data.drop('label', axis=1)
+features_walk_labels = np.concatenate((normalized_features_walk, walking_df[['label']].values[:normalized_features_walk.shape[0]]), axis=1)
+features_jump_labels = np.concatenate((normalized_features_jump, jumping_df[['label']].values[:normalized_features_jump.shape[0]]), axis=1)
 
-# Print how many NaN's in X
-print(X_train.isnull().sum())
+# Combine walking and jumping features and labels for a complete dataset
+all_features_labels = np.concatenate((features_walk_labels, features_jump_labels), axis=0)
 
-y_train = train_data['label']
-X_test = test_data.drop('label', axis=1)
-y_test = test_data['label']
+# Shuffle the combined dataset to ensure a mix of walking and jumping data in both training and testing sets
+np.random.shuffle(all_features_labels)
 
-# Create a Logistic Regression model
+# Split features and labels
+X = all_features_labels[:, :-1]  # Features
+y = all_features_labels[:, -1]  # Labels
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create and train the Logistic Regression model
 model = LogisticRegression(max_iter=10000)
+model.fit(X_train, y_train)
 
-clf = make_pipeline(StandardScaler(), model)
-# Train the model with the imputed training data
-clf.fit(X_train, y_train)
+# Predictions
+y_pred = model.predict(X_test)
 
-# Use the model to make predictions on the imputed test data
-y_pred = clf.predict(X_test)
-y_clf_prob = clf.predict_proba(X_test)
-# Measure the accuracy of your model using the original y_test labels
-print('y pred: ', y_pred)
-print('y_clf_prob: ', y_clf_prob)
-
+# Evaluate the model
 accuracy = accuracy_score(y_test, y_pred)
-print('Accuracy: ', accuracy)
-
 recall = recall_score(y_test, y_pred)
+
+print('Accuracy: ', accuracy)
 print('Recall: ', recall)
 
 ###########################################################################################################

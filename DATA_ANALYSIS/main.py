@@ -193,25 +193,3 @@ recall = recall_score(y_test, y_pred)
 
 print('Accuracy: ', accuracy)
 print('Recall: ', recall)
-
-###########################################################################################################
-# PLOT data for walking and jumping, all three axes
-# fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
-
-# smoothed_walking = moving_average_filter(walking_df, window_size=5).dropna().reset_index(drop=True)
-# smoothed_jumping = moving_average_filter(jumping_df, window_size=5).dropna().reset_index(drop=True)
-
-# # Plotting walking data
-# walking_data_sorted = smoothed_walking.sort_values(by='Time (s)')
-# walking_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[0, 0], title='Walking - X acceleration')
-# walking_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[0, 1], title='Walking - Y acceleration')
-# walking_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[0, 2], title='Walking - Z acceleration')
-
-# # Plotting jumping data
-# jumping_data_sorted = smoothed_jumping.sort_values(by='Time (s)')
-# jumping_data_sorted.plot(x='Time (s)', y='Acceleration x (m/s^2)', ax=axes[1, 0], title='Jumping - X acceleration')
-# jumping_data_sorted.plot(x='Time (s)', y='Acceleration y (m/s^2)', ax=axes[1, 1], title='Jumping - Y acceleration')
-# jumping_data_sorted.plot(x='Time (s)', y='Acceleration z (m/s^2)', ax=axes[1, 2], title='Jumping - Z acceleration')
-
-# plt.tight_layout()
-# plt.show()

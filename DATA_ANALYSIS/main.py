@@ -11,6 +11,13 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import recall_score
 
+# READING CSV files into data frames
+file_paths = {
+    'Oliver': ['meta/oliver_walking.csv', 'meta/oliver_jumping.csv'],
+    'Matthew': ['meta/matthew_walking.csv', 'meta/matthew_jumping.csv'],
+    'Daniel': ['meta/daniel_walking.csv', 'meta/daniel_jumping.csv'],
+}
+
 ############################################################################################################
 # FUNCTION to label data
 def label_data(data_fp, label):
@@ -21,25 +28,6 @@ def label_data(data_fp, label):
 
     return df
 
-# def impute_missing_values(df, strategy='mean'):
-#     # create an imputer object with a mean filling strategy
-#     imputer = SimpleImputer(strategy=strategy)
-#     # fit the imputer object on the data
-#     imputer.fit(df)
-#     # transform the data
-#     imputed_data = imputer.transform(df)
-#     # convert back to a data frame
-#     imputed_df = pd.DataFrame(imputed_data, columns=df.columns)
-
-#     return imputed_df
-
-############################################################################################################
-# READING CSV files into data frames
-file_paths = {
-    'Oliver': ['meta/oliver_walking.csv', 'meta/oliver_jumping.csv'],
-    'Matthew': ['meta/matthew_walking.csv', 'meta/matthew_jumping.csv'],
-    'Daniel': ['meta/daniel_walking.csv', 'meta/daniel_jumping.csv'],
-}
 oliver_walking_labeled = label_data(file_paths['Oliver'][0], 0.0)
 matthew_walking_labeled = label_data(file_paths['Matthew'][0], 0.0)
 daniel_walking_labeled = label_data(file_paths['Daniel'][0], 0.0)
@@ -48,18 +36,9 @@ oliver_jumping_labeled = label_data(file_paths['Oliver'][1], 1.0)
 matthew_jumping_labeled = label_data(file_paths['Matthew'][1], 1.0)
 daniel_jumping_labeled = label_data(file_paths['Daniel'][1], 1.0)
 
-# # IMPUTE missing values
-# oliver_walking_labeled = impute_missing_values(oliver_walking_labeled)
-# matthew_walking_labeled = impute_missing_values(matthew_walking_labeled)
-# daniel_walking_labeled = impute_missing_values(daniel_walking_labeled)
-
-# oliver_jumping_labeled = impute_missing_values(oliver_jumping_labeled)
-# matthew_jumping_labeled = impute_missing_values(matthew_jumping_labeled)
-# daniel_jumping_labeled = impute_missing_values(daniel_jumping_labeled)
-
 ############################################################################################################
-# SHUFFLE data frames in 5 second inteverals
-def shuffle_data(df, time='Time (s)', window_size=5):
+# SPLIT data frames in 5 second inteverals
+def split_data(df, time='Time (s)', window_size=5):
     # list to hold individual 5 second windows
     windows = []
     # initialize window time variables
@@ -73,34 +52,33 @@ def shuffle_data(df, time='Time (s)', window_size=5):
         start_time = end_time
         end_time += window_size
 
-    # shuffle the windows IN PLACE
-    np.random.shuffle(windows)
-
     # concatenate into a single dataframe
-    shuffled_df = pd.concat(windows)
+    split_df = pd.concat(windows)
 
-    return shuffled_df
+    return split_df
 
 ############################################################################################################
-# shuffle the data
-oliver_walking_shuffled = shuffle_data(oliver_walking_labeled)
-matthew_walking_shuffled = shuffle_data(matthew_walking_labeled)
-daniel_walking_shuffled = shuffle_data(daniel_walking_labeled)
 
-oliver_jumping_shuffled = shuffle_data(oliver_jumping_labeled)
-matthew_jumping_shuffled = shuffle_data(matthew_jumping_labeled)
-daniel_jumping_shuffled = shuffle_data(daniel_jumping_labeled)
+oliver_walking_split = shuffle(split_data(oliver_walking_labeled))
+matthew_walking_split = shuffle(split_data(matthew_walking_labeled))
+daniel_walking_split = shuffle(split_data(daniel_walking_labeled))
+
+oliver_jumping_split = shuffle(split_data(oliver_jumping_labeled))
+matthew_jumping_split = shuffle(split_data(matthew_jumping_labeled))
+daniel_jumping_split = shuffle(split_data(daniel_jumping_labeled))
 
 ############################################################################################################
 # combine dataframes by activity
 
-walking_df = pd.concat([oliver_walking_shuffled, matthew_walking_shuffled, daniel_walking_shuffled], ignore_index=True)
-jumping_df = pd.concat([oliver_jumping_shuffled, matthew_jumping_shuffled, daniel_jumping_shuffled], ignore_index=True)
+walking_df = pd.concat([oliver_walking_split, matthew_walking_split, daniel_walking_split], ignore_index=True)
+jumping_df = pd.concat([oliver_jumping_split, matthew_jumping_split, daniel_jumping_split], ignore_index=True)
+
 
 ############################################################################################################
 # SPLIT data into training and testing sets
 walking_train, walking_test = train_test_split(walking_df, test_size=0.1)
 jumping_train, jumping_test = train_test_split(jumping_df, test_size=0.1)
+
 
 ############################################################################################################
 # SAVE data to HDF5 file
@@ -128,13 +106,9 @@ with h5py.File('data.h5', 'w') as f:
 ############################################################################################################
 # Moving average filter
 def moving_average_filter(data, window_size=5):
-    
     data = data.iloc[:, 1:-1]
-
     sma = data.rolling(window=window_size).mean()
-
     sma = sma.dropna()
-
     return sma
 
 ############################################################################################################

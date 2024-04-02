@@ -25,7 +25,7 @@ QPushButton:hover {
     text-decoration: none;
     font-size: 16px;
     margin: 4px 2px;
-    font-family: "Inter", sans-serif;
+    font-family: "Inter", Arial, sans-serif;  /* Fallback font */
     border-radius: 10px;
     font-weight: bold;
 
@@ -45,7 +45,7 @@ QPushButton:hover {
     text-decoration: none;
     font-size: 16px;
     margin: 4px 2px;
-    font-family: "Inter", sans-serif;
+    font-family: "Inter", Arial, sans-serif;  /* Fallback font */
     border-radius: 10px;
     font-weight: bold;
 }
@@ -60,8 +60,8 @@ QPushButton:hover {
     font-weight: bold;
     padding: 15px, 15px;
     color: black;
-    background-color: grey;
-    font-family: "Inter", sans-serif;
+    background-color: lightgrey;
+    font-family: "Inter", Arial, sans-serif;  /* Fallback font */
     border-radius: 10px;
     font-size: 50px;
 }
@@ -70,7 +70,7 @@ QPushButton:hover {
     font-weight: bold;
     padding: 1px;
     color: black;
-    font-family: "Inter", sans-serif;
+    font-family: "Inter", Arial, sans-serif;  /* Fallback font */
     border-radius: 10px;
     font-size: 12px;
 }
@@ -78,7 +78,11 @@ QPushButton:hover {
 #acknowledgements {
     padding: 1px;
     color: rgb(255, 255, 255);
-    font-family: "Inter", sans-serif;
+    font-family: "Inter", Arial, sans-serif;  /* Fallback font */
     font-size: 12px;
     font-style: italic;
+}
+
+h1 {
+    
 }

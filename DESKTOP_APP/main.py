@@ -124,7 +124,6 @@ class CSVClassifierApp(QMainWindow):
     def showHelpWindow(self):
         appInstructions = """
         <h1>App Instructions</h1>
-        <p>Follow the steps below to use this app!</p>
         <ol>
             <li>Click the "Open CSV" button to select a CSV file</li>
             <li>Wait for the file to be processed</li>

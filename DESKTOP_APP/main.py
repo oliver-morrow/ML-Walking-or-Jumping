@@ -50,7 +50,7 @@ class CSVClassifierApp(QMainWindow):
         self.modified_table_widget.setMaximumSize(600, 400)
         self.tables_layout.addWidget(self.modified_table_widget)
 
-        self.plot_button = QPushButton('Plot Data', self)
+        self.plot_button = QPushButton('Plot Your Data', self)
         self.plot_button.clicked.connect(self.plotData)
         self.main_layout.addWidget(self.plot_button, 0, Qt.AlignCenter)
 

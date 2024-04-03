@@ -61,35 +61,38 @@ def window_feature_extract(window_list, Column):
                    'range_' + Column: f_range,
                    'energy_' + Column: energy,
                    'rms_' + Column: rms}
+        features_df.dropna()
         features_df = pd.concat([features_df, pd.DataFrame([new_row])], ignore_index=True)
 
     return features_df  # Corrected indentation for the return statement
 
 ############################################################################################################
 
-def plot_features(features_df1, features_df2):
-    num_columns = min(len(features_df1.columns), len(features_df2.columns))
-    for i in range(num_columns):
-        plt.figure(figsize=(20, 6))
+def plot_features(features_df, title="Features Plot", show_plots=True):
+    fig, ax = plt.subplots(figsize=(20, 6))
+    
+    for col in features_df.columns:
+        ax.plot(features_df.index, features_df[col], label=col)
+    
+    ax.set_title(title)
+    ax.set_xlabel('Index')
+    ax.set_ylabel('Value')
+    ax.legend()
+    ax.grid(True)
 
-        # Plot regular features
-        plt.subplot(1, 2, 1)
-        plt.plot(features_df1.iloc[:, i], label=features_df1.columns[i])
-        plt.title('Walking - Plot of ' + features_df1.columns[i])
-        plt.xlabel('Window')
-        plt.ylabel('Value')
-        plt.legend()
-        plt.grid(True)
-
-        # Plot SMA features
-        plt.subplot(1, 2, 2)
-        plt.plot(features_df2.iloc[:, i], label=features_df2.columns[i])
-        plt.title('Jumping - Plot of ' + features_df2.columns[i])
-        plt.xlabel('Window')
-        plt.ylabel('Value')
-        plt.legend()
-        plt.grid(True)
-
+    if show_plots:
         plt.show()
+    else:
+        return fig
 
 ############################################################################################################
+
+def plot_raw_data(df, columns):
+    plt.figure(figsize=(20, 6))
+    for column in columns:
+        plt.plot(df['Time (s)'], df[column], label=column)
+    plt.title('Raw Sensor Data')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Sensor Readings')
+    plt.legend()
+    plt.show()

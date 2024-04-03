@@ -62,39 +62,17 @@ def split_data(df, time='Time (s)', window_size=5):
 
 
 ############################################################################################################
-walking_data_list = pd.concat([oliver_walking_labeled, matthew_walking_labeled, daniel_walking_labeled],
-                              ignore_index=True)
+walking_data_list = pd.concat([oliver_walking_labeled, matthew_walking_labeled, daniel_walking_labeled])
 walking_data_list = split_data(walking_data_list)
 
 jumping_data_list = pd.concat([oliver_jumping_labeled, matthew_jumping_labeled, daniel_jumping_labeled])
 jumping_data_list = split_data(jumping_data_list)
 
-walking_train, walking_test = train_test_split(walking_data_list, test_size=0.1, shuffle=True)
-
-# oliver_walking_split = split_data(oliver_walking_labeled)
-# matthew_walking_split = split_data(matthew_walking_labeled)
-# daniel_walking_split = split_data(daniel_walking_labeled)
-
-# oliver_jumping_split = split_data(oliver_jumping_labeled)
-# matthew_jumping_split = split_data(matthew_jumping_labeled)
-# daniel_jumping_split = split_data(daniel_jumping_labeled)
-
-############################################################################################################
-# combine dataframes by activity
-
-# walking_df = pd.concat([oliver_walking_split, matthew_walking_split, daniel_walking_split], ignore_index=True)
-# jumping_df = pd.concat([oliver_jumping_split, matthew_jumping_split, daniel_jumping_split], ignore_index=True)
-############################################################################################################
-# Get features of all the data
-# Function to calculate features for a specific column
-
-# Recreate an empty DataFrame to store the features
+# Append lists
+data_list = walking_data_list + jumping_data_list
 
 
-############################################################################################################
-# SPLIT data into training and testing sets
-# walking_train, walking_test = train_test_split(walking_df, test_size=0.1, shuffle=True)
-# jumping_train, jumping_test = train_test_split(jumping_df, test_size=0.1, shuffle=True)
+train, test = train_test_split(data_list, test_size=0.1, shuffle=True)
 
 ############################################################################################################
 # SAVE data to HDF5 file
@@ -112,13 +90,15 @@ with h5py.File('data.h5', 'w') as f:
     G3.create_dataset('jumping', data=daniel_jumping_labeled)
 
     G41 = f.create_group('/dataset/train')
-    # G41.create_dataset('walking_train', data=walking_train)
-    # G41.create_dataset('jumping_train', data=jumping_train)
+    
+    for i in range(len(train)):
+        dataset = G41.create_dataset(f'window_{i}', data=train[i])
 
     G42 = f.create_group('/dataset/test')
-    # G42.create_dataset('walking_test', data=walking_test)
-    # G42.create_dataset('jumping_test', data=jumping_test)
+    for i in range(len(test)):
+        dataset = G42.create_dataset(f'window_{i}', data=test[i])
 
+    f.close()
 
 ############################################################################################################
 # Moving average filter

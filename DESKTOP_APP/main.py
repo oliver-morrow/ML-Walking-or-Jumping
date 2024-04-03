@@ -152,7 +152,6 @@ class CSVClassifierApp(QMainWindow):
             QMessageBox.warning(self, "Action Required", "Please process a CSV file before plotting.")
             return
         
-        # Assuming self.modified_data contains the data you want to plot
         dialog = QDialog(self)
         dialog.setWindowTitle("Data Plot")
         dialog.setFixedSize(600, 400)
@@ -166,7 +165,7 @@ class CSVClassifierApp(QMainWindow):
         # Example of plotting first two columns against each other
         # Modify according to your data structure
         ax.scatter(self.modified_data.iloc[:, 0], self.modified_data.iloc[:, 1])
-        ax.set_title('Plot Title')
+        ax.set_title('Extracted Features Plot')
         ax.set_xlabel('X-axis Label')
         ax.set_ylabel('Y-axis Label')
 

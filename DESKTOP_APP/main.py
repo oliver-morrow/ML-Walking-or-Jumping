@@ -6,6 +6,11 @@ from joblib import load
 from PyQt5.QtCore import Qt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import joblib
+from extract import split_data, window_feature_extract, SMA, plot_features
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import shuffle
+import numpy as np
 
 class CSVClassifierApp(QMainWindow):
     def __init__(self):
@@ -94,25 +99,39 @@ class CSVClassifierApp(QMainWindow):
             self.classifyCSV(fileName)
 
     def classifyCSV(self, csv_file):
-        model = load('logistic_regression_model.joblib')
         data = pd.read_csv(csv_file)
-        predictions = model.predict(data)
-        data['Prediction'] = predictions
-        self.showCSVDataInTable(data)
+        self.data = data
+        self.showCSVDataInTable(data, self.initial_table_widget)
+        data_split = split_data(data)
+        sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 
+                          'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
+        data_sma = [SMA(window, sensor_columns, window_size=10) for window in data_split]
+        self.data_sma = data_sma
+        self.data_sma_combined = pd.concat(self.data_sma, ignore_index=True)
+        data_features = window_feature_extract(data_sma, 'Absolute acceleration (m/s^2)')
+        data_features['label'] = np.nan
+        scaler = StandardScaler()
+        data_normalized = pd.DataFrame(scaler.fit_transform(data_features.drop(columns=['label'])), columns=data_features.drop(columns=['label']).columns)
+        model = joblib.load('model.joblib')
+        data_features['label'] = model.predict(data_normalized)
+        self.modified_data = data_features
+        self.showCSVDataInTable(self.modified_data, self.modified_table_widget)
         self.dataProcessed = True
 
-    def showCSVDataInTable(self, data):
-        self.modified_table_widget.clear()
-        self.modified_table_widget.setColumnCount(len(data.columns))
-        self.modified_table_widget.setRowCount(len(data.index))
-        self.modified_table_widget.setHorizontalHeaderLabels(data.columns)
-        
+
+    def showCSVDataInTable(self, data, table_widget):
+        table_widget.clear()
+        table_widget.setColumnCount(len(data.columns))
+        table_widget.setRowCount(len(data.index))
+        table_widget.setHorizontalHeaderLabels(data.columns)
+
         for i, (index, row) in enumerate(data.iterrows()):
             for j, value in enumerate(row):
-                self.modified_table_widget.setItem(i, j, QTableWidgetItem(str(value)))
-                
-        self.modified_table_widget.resizeColumnsToContents()
-        self.modified_table_widget.resizeRowsToContents()
+                table_widget.setItem(i, j, QTableWidgetItem(str(value)))
+
+        table_widget.resizeColumnsToContents()
+        table_widget.resizeRowsToContents()
+
 
     def saveFileDialog(self):
         options = QFileDialog.Options()
@@ -134,27 +153,46 @@ class CSVClassifierApp(QMainWindow):
         if not self.dataProcessed:
             QMessageBox.warning(self, "Action Required", "Please process a CSV file before plotting.")
             return
-        
-        # Assuming self.modified_data contains the data you want to plot
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Data Plot")
-        dialog.setFixedSize(600, 400)
-        layout = QVBoxLayout()
+    
+        dialog_raw = QDialog(self)
+        dialog_raw.setWindowTitle("Original Data Plot")
+        dialog_raw_layout = QVBoxLayout()
+        dialog_raw.setLayout(dialog_raw_layout)
+        fig_raw = Figure(figsize=(10, 6))
+        canvas_raw = FigureCanvas(fig_raw)
+        dialog_raw_layout.addWidget(canvas_raw)
+        ax_raw = fig_raw.add_subplot(111)
+        sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
+        for column in sensor_columns:
+            ax_raw.plot(self.data['Time (s)'], self.data[column], label=column)
+        ax_raw.set_title('Raw Data')
+        ax_raw.set_xlabel('Time (s)')
+        ax_raw.set_ylabel('Sensor Readings (m/s^2)')
+        ax_raw.legend()
 
-        fig = Figure()
-        canvas = FigureCanvas(fig)
-        layout.addWidget(canvas)
+        dialog_raw.show()
 
-        ax = fig.add_subplot(111)
-        # Example of plotting first two columns against each other
-        # Modify according to your data structure
-        ax.scatter(self.modified_data.iloc[:, 0], self.modified_data.iloc[:, 1])
-        ax.set_title('Plot Title')
-        ax.set_xlabel('X-axis Label')
-        ax.set_ylabel('Y-axis Label')
+        dialog_sma = QDialog(self)
+        dialog_sma.setWindowTitle("SMA Data Plot")
+        dialog_sma_layout = QVBoxLayout()
+        dialog_sma.setLayout(dialog_sma_layout)
+        fig_sma = Figure(figsize=(10, 6))
+        canvas_sma = FigureCanvas(fig_sma)
+        dialog_sma_layout.addWidget(canvas_sma)
+        ax_sma = fig_sma.add_subplot(111)
 
-        dialog.setLayout(layout)
-        dialog.exec_()
+        # Plot the concatenated SMA data
+        for column in ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']:
+            if column in self.data_sma_combined.columns:
+                # Here you might need to adjust 'Time (s)' based on how you handle it in concatenation
+                ax_sma.plot(self.data_sma_combined['Time (s)'], self.data_sma_combined[column], label=f"SMA {column}")
+        ax_sma.set_title('SMA Data')
+        ax_sma.set_xlabel('Time (s)')
+        ax_sma.set_ylabel('Sensor Readings (m/s^2)')
+        ax_sma.legend()
+
+        dialog_sma.show()
+    
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

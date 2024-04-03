@@ -6,7 +6,7 @@ import h5py
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay, accuracy_score, confusion_matrix, roc_auc_score, roc_curve
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import recall_score
@@ -54,8 +54,6 @@ def split_data(df, time='Time (s)', window_size=5):
     # split the data into windows
     while end_time <= df[time].max():
         window = df[(df[time] >= start_time) & (df[time] < end_time)]
-        # print(window)
-        # print('FUCK')
         windows.append(window)
         start_time = end_time
         end_time += window_size
@@ -244,40 +242,23 @@ recall = recall_score(y_test, y_pred)
 # Print accuracy and recall
 print('Accuracy:', accuracy)
 print('Recall:', recall)
+
+# Confusion matrix
+cm = confusion_matrix(y_test, y_pred)
+cm_display = ConfusionMatrixDisplay(cm).plot()
+plt.show()
+
+# Plotting the ROC curve
+y_clf_prob = model.predict_proba(X_test)
+fpr, tpr, _ = roc_curve(y_test, y_clf_prob[:, 1], pos_label=model.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+plt.show()
+
+# calculating AUC
+auc = roc_auc_score(y_test, y_clf_prob[:, 1])
+print('AUC:', auc)
+
+
 # Save the model
 joblib.dump(model, 'model.joblib')
-#plot_features(walking_features_df, jumping_features_df)
-
-###########################################################################################################
-
-# features_walk_labels = np.concatenate(
-# (normalized_features_walk, walking_df[['label']].values[:normalized_features_walk.shape[0]]), axis=1)
-# features_jump_labels = np.concatenate(
-#  (normalized_features_jump, jumping_df[['label']].values[:normalized_features_jump.shape[0]]), axis=1)
-
-# Combine walking and jumping features and labels for a complete dataset
-# all_features_labels = np.concatenate((features_walk_labels, features_jump_labels), axis=0)
-
-# Shuffle the combined dataset to ensure a mix of walking and jumping data in both training and testing sets
-# np.random.shuffle(all_features_labels)
-
-# Split features and labels
-# X = all_features_labels[:, :-1]  # Features
-# y = all_features_labels[:, -1]  # Labels
-
-# Split the data into training and testing sets
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Create and train the Logistic Regression model
-# model = LogisticRegression(max_iter=10000)
-# model.fit(X_train, y_train)
-
-# Predictions
-# y_pred = model.predict(X_test)
-
-# Evaluate the model
-# accuracy = accuracy_score(y_test, y_pred)
-# recall = recall_score(y_test, y_pred)
-
-# print('Accuracy: ', accuracy)
-# print('Recall: ', recall)
+# plot_features(walking_features_df, jumping_features_df)

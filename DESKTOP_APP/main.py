@@ -6,6 +6,7 @@ from joblib import load
 from PyQt5.QtCore import Qt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import joblib
 
 class CSVClassifierApp(QMainWindow):
     def __init__(self):
@@ -94,12 +95,14 @@ class CSVClassifierApp(QMainWindow):
             self.classifyCSV(fileName)
 
     def classifyCSV(self, csv_file):
-        model = load('logistic_regression_model.joblib')
-        data = pd.read_csv(csv_file)
-        predictions = model.predict(data)
-        data['Prediction'] = predictions
-        self.showCSVDataInTable(data)
+        pipe = joblib.load('model.pkl')
+        pr = pd.read_csv(csv_file)
+        
+        pr['label'] = pipe.predict(pr)
+        self.modified_data = pr
+        self.showCSVDataInTable(pr)
         self.dataProcessed = True
+
 
     def showCSVDataInTable(self, data):
         self.modified_table_widget.clear()

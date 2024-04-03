@@ -137,8 +137,8 @@ def SMA(data, columns, window_size):
 sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
 
 # Apply the moving average to each window in walking and jumping data lists
-walking_data_list_sma = [SMA(window, sensor_columns, window_size=3) for window in walking_data_list]
-jumping_data_list_sma = [SMA(window, sensor_columns, window_size=3) for window in jumping_data_list]
+walking_data_list_sma = [SMA(window, sensor_columns, window_size=10) for window in walking_data_list]
+jumping_data_list_sma = [SMA(window, sensor_columns, window_size=10) for window in jumping_data_list]
 
 
 ############################################################################################################
@@ -203,8 +203,8 @@ def plot_features(features_df1, features_df2):
         plt.show()
 
 
-walking_features_df = window_feature_extract(walking_data_list_sma, 'Acceleration z (m/s^2)')
-jumping_features_df = window_feature_extract(jumping_data_list_sma, 'Acceleration z (m/s^2)')
+walking_features_df = window_feature_extract(walking_data_list_sma, 'Absolute acceleration (m/s^2)')
+jumping_features_df = window_feature_extract(jumping_data_list_sma, 'Absolute acceleration (m/s^2)')
 walking_features_df['label'] = 0
 jumping_features_df['label'] = 1
 
@@ -234,7 +234,7 @@ model = LogisticRegression(max_iter=10000)
 model.fit(X_train, y_train)
 
 # Save the model
-joblib.dump(model, 'model.joblib')
+joblib.dump(model, 'model.pkl')
 
 # Predictions
 y_pred = model.predict(X_test)

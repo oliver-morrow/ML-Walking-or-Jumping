@@ -233,8 +233,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_
 model = LogisticRegression(max_iter=10000)
 model.fit(X_train, y_train)
 
-# Save the model
-joblib.dump(model, 'model.pkl')
 
 # Predictions
 y_pred = model.predict(X_test)
@@ -246,6 +244,8 @@ recall = recall_score(y_test, y_pred)
 # Print accuracy and recall
 print('Accuracy:', accuracy)
 print('Recall:', recall)
+# Save the model
+joblib.dump(model, 'model.joblib')
 #plot_features(walking_features_df, jumping_features_df)
 
 ###########################################################################################################

@@ -7,9 +7,10 @@ from PyQt5.QtCore import Qt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import joblib
-from extract import window_feature_extract, SMA
+from extract import split_data, window_feature_extract, SMA, plot_features
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
+import numpy as np
 
 class CSVClassifierApp(QMainWindow):
     def __init__(self):
@@ -99,39 +100,35 @@ class CSVClassifierApp(QMainWindow):
 
     def classifyCSV(self, csv_file):
         data = pd.read_csv(csv_file)
-
+        self.showCSVDataInTable(data, self.initial_table_widget)
+        data_split = split_data(data)
         sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 
                           'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
-        
-        data_sma = SMA(data, sensor_columns, window_size=10)
-        features = window_feature_extract(data_sma, 'Absolute acceleration (m/s^2)')
-
+        data_sma = [SMA(window, sensor_columns, window_size=10) for window in data_split]
+        data_features = window_feature_extract(data_sma, 'Absolute acceleration (m/s^2)')
+        data_features['label'] = np.nan
         scaler = StandardScaler()
-        normalized_features = pd.DataFrame(scaler.fit_transform(features.drop(columns=['label'])), columns=features.drop(columns=['label']).columns)
-
-        # Load the classifier
-        classifier = joblib.load('classifier.joblib')
-        predictions = classifier.predict(normalized_features)
-
-        features['label'] = predictions
-
-        self.modified_data = features
-        self.showCSVDataInTable(features)
+        data_normalized = pd.DataFrame(scaler.fit_transform(data_features.drop(columns=['label'])), columns=data_features.drop(columns=['label']).columns)
+        model = joblib.load('model.joblib')
+        data_features['label'] = model.predict(data_normalized)
+        self.modified_data = data_features
+        self.showCSVDataInTable(self.modified_data, self.modified_table_widget)
         self.dataProcessed = True
 
 
-    def showCSVDataInTable(self, data):
-        self.modified_table_widget.clear()
-        self.modified_table_widget.setColumnCount(len(data.columns))
-        self.modified_table_widget.setRowCount(len(data.index))
-        self.modified_table_widget.setHorizontalHeaderLabels(data.columns)
-        
+    def showCSVDataInTable(self, data, table_widget):
+        table_widget.clear()
+        table_widget.setColumnCount(len(data.columns))
+        table_widget.setRowCount(len(data.index))
+        table_widget.setHorizontalHeaderLabels(data.columns)
+
         for i, (index, row) in enumerate(data.iterrows()):
             for j, value in enumerate(row):
-                self.modified_table_widget.setItem(i, j, QTableWidgetItem(str(value)))
-                
-        self.modified_table_widget.resizeColumnsToContents()
-        self.modified_table_widget.resizeRowsToContents()
+                table_widget.setItem(i, j, QTableWidgetItem(str(value)))
+
+        table_widget.resizeColumnsToContents()
+        table_widget.resizeRowsToContents()
+
 
     def saveFileDialog(self):
         options = QFileDialog.Options()

@@ -12,6 +12,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.metrics import recall_score
 from sklearn.decomposition import PCA
 from sklearn.inspection import DecisionBoundaryDisplay
+import joblib
 
 # READING CSV files into data frames
 file_paths = {
@@ -117,29 +118,28 @@ with h5py.File('data.h5', 'w') as f:
     # G41.create_dataset('jumping_train', data=jumping_train)
 
     G42 = f.create_group('/dataset/test')
-
-
-# G42.create_dataset('walking_test', data=walking_test)
-# G42.create_dataset('jumping_test', data=jumping_test)
+    # G42.create_dataset('walking_test', data=walking_test)
+    # G42.create_dataset('jumping_test', data=jumping_test)
 
 
 ############################################################################################################
 # Moving average filter
-def SMA(data, window_size=5):
-    data = data.iloc[:, 1:-1]
-    sma = data.rolling(window=window_size).mean()
-    sma = sma.dropna()
-    return sma
+def SMA(data, columns, window_size):
+    smoothed_data = data.copy()
+    for col in columns:
+        # Use rolling window to calculate the moving average, then fill NaNs at the start with original values
+        smoothed_col = data[col].rolling(window=window_size, min_periods=1).mean()
+        smoothed_data[col] = smoothed_col
+
+    return smoothed_data
 
 
-walking_data_list_sma = []
-for i in range(len(walking_data_list)):
-    walking_data_list_sma.append(SMA(walking_data_list[i], window_size=10))
+sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
 
+# Apply the moving average to each window in walking and jumping data lists
+walking_data_list_sma = [SMA(window, sensor_columns, window_size=3) for window in walking_data_list]
+jumping_data_list_sma = [SMA(window, sensor_columns, window_size=3) for window in jumping_data_list]
 
-# jumping_data_list_sma = []
-# for i in range(len(jumping_data_list)):
-#    jumping_data_list_sma.append(SMA(walking_data_list[i], window_size=5))
 
 ############################################################################################################
 
@@ -203,8 +203,8 @@ def plot_features(features_df1, features_df2):
         plt.show()
 
 
-walking_features_df = window_feature_extract(walking_data_list, 'Acceleration z (m/s^2)')
-jumping_features_df = window_feature_extract(jumping_data_list, 'Acceleration z (m/s^2)')
+walking_features_df = window_feature_extract(walking_data_list_sma, 'Acceleration z (m/s^2)')
+jumping_features_df = window_feature_extract(jumping_data_list_sma, 'Acceleration z (m/s^2)')
 walking_features_df['label'] = 0
 jumping_features_df['label'] = 1
 
@@ -232,6 +232,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_
 # Create and train the Logistic Regression model
 model = LogisticRegression(max_iter=10000)
 model.fit(X_train, y_train)
+
+# Save the model
+joblib.dump(model, 'model.joblib')
 
 # Predictions
 y_pred = model.predict(X_test)

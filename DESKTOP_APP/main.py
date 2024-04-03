@@ -7,6 +7,9 @@ from PyQt5.QtCore import Qt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import joblib
+from extract import window_feature_extract, SMA
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import shuffle
 
 class CSVClassifierApp(QMainWindow):
     def __init__(self):
@@ -95,12 +98,25 @@ class CSVClassifierApp(QMainWindow):
             self.classifyCSV(fileName)
 
     def classifyCSV(self, csv_file):
-        pipe = joblib.load('model.pkl')
-        pr = pd.read_csv(csv_file)
+        data = pd.read_csv(csv_file)
+
+        sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 
+                          'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
         
-        pr['label'] = pipe.predict(pr)
-        self.modified_data = pr
-        self.showCSVDataInTable(pr)
+        data_sma = SMA(data, sensor_columns, window_size=10)
+        features = window_feature_extract(data_sma, 'Absolute acceleration (m/s^2)')
+
+        scaler = StandardScaler()
+        normalized_features = pd.DataFrame(scaler.fit_transform(features.drop(columns=['label'])), columns=features.drop(columns=['label']).columns)
+
+        # Load the classifier
+        classifier = joblib.load('classifier.joblib')
+        predictions = classifier.predict(normalized_features)
+
+        features['label'] = predictions
+
+        self.modified_data = features
+        self.showCSVDataInTable(features)
         self.dataProcessed = True
 
 

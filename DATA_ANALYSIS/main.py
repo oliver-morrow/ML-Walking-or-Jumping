@@ -183,8 +183,8 @@ def plot_features(features_df1, features_df2):
 
 walking_features_df = window_feature_extract(walking_data_list_sma, 'Absolute acceleration (m/s^2)')
 jumping_features_df = window_feature_extract(jumping_data_list_sma, 'Absolute acceleration (m/s^2)')
-walking_features_df['label'] = 0
-jumping_features_df['label'] = 1
+walking_features_df['label'] = 'walking'
+jumping_features_df['label'] = 'jumping'
 
 
 scaler = StandardScaler()
@@ -217,7 +217,7 @@ y_pred = model.predict(X_test)
 
 # Evaluate the model
 accuracy = accuracy_score(y_test, y_pred)
-recall = recall_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred, pos_label='jumping')
 
 # Print accuracy and recall
 print('Accuracy:', accuracy)
@@ -242,3 +242,18 @@ print('AUC:', auc)
 # Save the model
 joblib.dump(model, 'model.joblib')
 # plot_features(walking_features_df, jumping_features_df)
+
+
+# TO TEST
+data = pd.read_csv('meta/oliver_jumping.csv')
+data_split = split_data(data)
+sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 
+                    'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
+data_sma = [SMA(window, sensor_columns, window_size=10) for window in data_split]
+data_features = window_feature_extract(data_sma, 'Absolute acceleration (m/s^2)')
+data_features['label'] = np.nan
+scaler = StandardScaler()
+data_normalized = pd.DataFrame(scaler.fit_transform(data_features.drop(columns=['label'])), columns=data_features.drop(columns=['label']).columns)
+model = joblib.load('model.joblib')
+data_features['label'] = model.predict(data_normalized)
+print(data_features)

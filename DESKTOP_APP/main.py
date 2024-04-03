@@ -107,7 +107,6 @@ class CSVClassifierApp(QMainWindow):
                           'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
         data_sma = [SMA(window, sensor_columns, window_size=10) for window in data_split]
         self.data_sma = data_sma
-        self.data_sma_combined = pd.concat(self.data_sma, ignore_index=True)
         data_features = window_feature_extract(data_sma, 'Absolute acceleration (m/s^2)')
         data_features['label'] = np.nan
         scaler = StandardScaler()
@@ -117,6 +116,7 @@ class CSVClassifierApp(QMainWindow):
         self.modified_data = data_features
         self.showCSVDataInTable(self.modified_data, self.modified_table_widget)
         self.dataProcessed = True
+        self.data_sma_combined = pd.concat(self.data_sma, ignore_index=True)
 
 
     def showCSVDataInTable(self, data, table_widget):

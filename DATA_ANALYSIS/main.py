@@ -57,7 +57,7 @@ def split_data(df, time='Time (s)', window_size=5):
         windows.append(window)
         start_time = end_time
         end_time += window_size
-
+        
     return windows
 
 

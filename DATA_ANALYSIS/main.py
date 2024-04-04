@@ -191,13 +191,12 @@ jumping_features_df = window_feature_extract(jumping_data_list_sma, columns)
 walking_features_df['label'] = 0.0
 jumping_features_df['label'] = 1.0
 
-scaler = StandardScaler()
-normalized_walking_features_df = pd.DataFrame(scaler.fit_transform(walking_features_df.drop(columns=['label'])), columns=walking_features_df.drop(columns=['label']).columns)
-normalized_jumping_features_df = pd.DataFrame(scaler.transform(jumping_features_df.drop(columns=['label'])), columns=jumping_features_df.drop(columns=['label']).columns)
+# scaler = StandardScaler()
+# normalized_walking_features_df = pd.DataFrame(scaler.fit_transform(walking_features_df.drop(columns=['label'])), columns=walking_features_df.drop(columns=['label']).columns)
+# normalized_jumping_features_df = pd.DataFrame(scaler.transform(jumping_features_df.drop(columns=['label'])), columns=jumping_features_df.drop(columns=['label']).columns)
 
 # Concatenate the normalized DataFrames along the rows
-all_features_df = pd.concat([normalized_walking_features_df, normalized_jumping_features_df], ignore_index=True)
-
+all_features_df = pd.concat([walking_features_df, jumping_features_df], ignore_index=True)
 # Add labels to the combined DataFrame
 all_features_df['label'] = pd.concat([walking_features_df['label'], jumping_features_df['label']], ignore_index=True)
 # Shuffle the combined dataset

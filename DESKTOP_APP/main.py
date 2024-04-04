@@ -114,7 +114,6 @@ class CSVClassifierApp(QMainWindow):
         # data_normalized = pd.DataFrame(scaler.fit_transform(data_features.drop(columns=['label'])), columns=data_features.drop(columns=['label']).columns)
         model = joblib.load('model.joblib')
         data_features['label'] = model.predict(data_features)
-        print(data_features['label'])
         
         # For app
         self.modified_data = data_features

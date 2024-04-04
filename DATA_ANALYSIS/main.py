@@ -21,7 +21,6 @@ file_paths = {
     'Daniel': ['meta/daniel_walking.csv', 'meta/daniel_jumping.csv'],
 }
 
-
 ############################################################################################################
 # FUNCTION to label data
 def label_data(data_fp, label):
@@ -41,7 +40,6 @@ oliver_jumping_labeled = label_data(file_paths['Oliver'][1], 1.0)
 matthew_jumping_labeled = label_data(file_paths['Matthew'][1], 1.0)
 daniel_jumping_labeled = label_data(file_paths['Daniel'][1], 1.0)
 
-
 ############################################################################################################
 # SPLIT data frames in 5 second inteverals
 def split_data(df, time='Time (s)', window_size=5):
@@ -60,7 +58,6 @@ def split_data(df, time='Time (s)', window_size=5):
         
     return windows
 
-
 ############################################################################################################
 walking_data_list = pd.concat([oliver_walking_labeled, matthew_walking_labeled])
 walking_data_list = split_data(walking_data_list)
@@ -70,8 +67,6 @@ jumping_data_list = split_data(jumping_data_list)
 
 # Append lists
 data_list = walking_data_list + jumping_data_list
-
-
 train, test = train_test_split(data_list, test_size=0.1, shuffle=True)
 
 ############################################################################################################
@@ -197,8 +192,8 @@ def plot_features(features_df1, features_df2):
 columns = ['Absolute acceleration (m/s^2)', 'Acceleration z (m/s^2)']
 walking_features_df = window_feature_extract(walking_data_list_sma, columns)
 jumping_features_df = window_feature_extract(jumping_data_list_sma, columns)
-walking_features_df['label'] = 0.0
-jumping_features_df['label'] = 1.0
+walking_features_df['label'] = 'Walking'
+jumping_features_df['label'] = 'Jumping'
 
 # scaler = StandardScaler()
 # normalized_walking_features_df = pd.DataFrame(scaler.fit_transform(walking_features_df.drop(columns=['label'])), columns=walking_features_df.drop(columns=['label']).columns)

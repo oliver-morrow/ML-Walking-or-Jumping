@@ -62,10 +62,10 @@ def split_data(df, time='Time (s)', window_size=5):
 
 
 ############################################################################################################
-walking_data_list = pd.concat([oliver_walking_labeled, matthew_walking_labeled, daniel_walking_labeled])
+walking_data_list = pd.concat([oliver_walking_labeled, matthew_walking_labeled])
 walking_data_list = split_data(walking_data_list)
 
-jumping_data_list = pd.concat([oliver_jumping_labeled, matthew_jumping_labeled, daniel_jumping_labeled])
+jumping_data_list = pd.concat([oliver_jumping_labeled, matthew_jumping_labeled])
 jumping_data_list = split_data(jumping_data_list)
 
 # Append lists
@@ -115,8 +115,8 @@ def SMA(data, columns, window_size):
 sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
 
 # Apply the moving average to each window in walking and jumping data lists
-walking_data_list_sma = [SMA(window, sensor_columns, window_size=10) for window in walking_data_list]
-jumping_data_list_sma = [SMA(window, sensor_columns, window_size=10) for window in jumping_data_list]
+walking_data_list_sma = [SMA(window, sensor_columns, window_size=5) for window in walking_data_list]
+jumping_data_list_sma = [SMA(window, sensor_columns, window_size=5) for window in jumping_data_list]
 
 
 ############################################################################################################
@@ -183,9 +183,8 @@ def plot_features(features_df1, features_df2):
 
 walking_features_df = window_feature_extract(walking_data_list_sma, 'Absolute acceleration (m/s^2)')
 jumping_features_df = window_feature_extract(jumping_data_list_sma, 'Absolute acceleration (m/s^2)')
-walking_features_df['label'] = 'walking'
-jumping_features_df['label'] = 'jumping'
-
+walking_features_df['label'] = 0.0
+jumping_features_df['label'] = 1.0
 
 scaler = StandardScaler()
 normalized_walking_features_df = pd.DataFrame(scaler.fit_transform(walking_features_df.drop(columns=['label'])), columns=walking_features_df.drop(columns=['label']).columns)
@@ -196,64 +195,58 @@ all_features_df = pd.concat([normalized_walking_features_df, normalized_jumping_
 
 # Add labels to the combined DataFrame
 all_features_df['label'] = pd.concat([walking_features_df['label'], jumping_features_df['label']], ignore_index=True)
-
 # Shuffle the combined dataset
 all_features_df = shuffle(all_features_df)
 
 # Separate features (X) and labels (y)
-X = all_features_df.drop(columns=['label'])
-y = all_features_df['label']
+data = all_features_df.drop(columns=['label'])
+labels = all_features_df['label']
 
 # Split the data into training and testing sets (90-10 split)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+X_train, X_test, y_train, y_test = \
+    train_test_split(data, labels, test_size=0.1, random_state=0)
 
-# Create and train the Logistic Regression model
-model = LogisticRegression(max_iter=10000)
-model.fit(X_train, y_train)
+y_train = np.ravel(y_train)
+y_test = np.ravel(y_test)
+scaler = StandardScaler()
 
+
+l_reg = LogisticRegression(max_iter=10000)
+clf = make_pipeline(StandardScaler(), l_reg)
+
+clf.fit(X_train, y_train)
+
+print(y_train)
+print(y_test)
 
 # Predictions
-y_pred = model.predict(X_test)
+y_pred = clf.predict(X_test)
 
 # Evaluate the model
 accuracy = accuracy_score(y_test, y_pred)
-recall = recall_score(y_test, y_pred, pos_label='jumping')
+# recall = recall_score(y_test, y_pred)
 
 # Print accuracy and recall
 print('Accuracy:', accuracy)
-print('Recall:', recall)
+# print('Recall:', recall)
 
 # Confusion matrix
-cm = confusion_matrix(y_test, y_pred)
-cm_display = ConfusionMatrixDisplay(cm).plot()
-plt.show()
+# cm = confusion_matrix(y_test, y_pred)
+# cm_display = ConfusionMatrixDisplay(cm).plot()
+# plt.show()
 
-# Plotting the ROC curve
-y_clf_prob = model.predict_proba(X_test)
-fpr, tpr, _ = roc_curve(y_test, y_clf_prob[:, 1], pos_label=model.classes_[1])
-roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
-plt.show()
+# # Plotting the ROC curve
+# y_clf_prob = model.predict_proba(X_test)
+# fpr, tpr, _ = roc_curve(y_test, y_clf_prob[:, 1], pos_label=model.classes_[1])
+# roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+# plt.show()
 
-# calculating AUC
-auc = roc_auc_score(y_test, y_clf_prob[:, 1])
-print('AUC:', auc)
+# # calculating AUC
+# auc = roc_auc_score(y_test, y_clf_prob[:, 1])
+# print('AUC:', auc)
 
 
-# Save the model
-joblib.dump(model, 'model.joblib')
+# Save the model to a joblib
+joblib.dump(clf, 'model.joblib')
+
 # plot_features(walking_features_df, jumping_features_df)
-
-
-# TO TEST
-data = pd.read_csv('meta/oliver_jumping.csv')
-data_split = split_data(data)
-sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 
-                    'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
-data_sma = [SMA(window, sensor_columns, window_size=10) for window in data_split]
-data_features = window_feature_extract(data_sma, 'Absolute acceleration (m/s^2)')
-data_features['label'] = np.nan
-scaler = StandardScaler()
-data_normalized = pd.DataFrame(scaler.fit_transform(data_features.drop(columns=['label'])), columns=data_features.drop(columns=['label']).columns)
-model = joblib.load('model.joblib')
-data_features['label'] = model.predict(data_normalized)
-print(data_features)

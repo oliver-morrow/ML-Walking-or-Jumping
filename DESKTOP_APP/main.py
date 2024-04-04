@@ -105,7 +105,7 @@ class CSVClassifierApp(QMainWindow):
         data_split = split_data(data)
         sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 
                           'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
-        data_sma = [SMA(window, sensor_columns, window_size=10) for window in data_split]
+        data_sma = [SMA(window, sensor_columns, window_size=5) for window in data_split]
         self.data_sma = data_sma
         data_features = window_feature_extract(data_sma, 'Absolute acceleration (m/s^2)')
         data_features['label'] = np.nan
@@ -113,6 +113,9 @@ class CSVClassifierApp(QMainWindow):
         data_normalized = pd.DataFrame(scaler.fit_transform(data_features.drop(columns=['label'])), columns=data_features.drop(columns=['label']).columns)
         model = joblib.load('model.joblib')
         data_features['label'] = model.predict(data_normalized)
+        print(data_features['label'])
+        
+        # For app
         self.modified_data = data_features
         self.showCSVDataInTable(self.modified_data, self.modified_table_widget)
         self.dataProcessed = True

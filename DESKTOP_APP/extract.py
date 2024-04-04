@@ -32,39 +32,43 @@ def SMA(data, columns, window_size):
 
 ############################################################################################################
 
-def window_feature_extract(window_list, Column):
-    features_df = pd.DataFrame(columns=['max_' + Column, 'min_' + Column, 'skew_' + Column, 'std_' + Column, \
-                                        'mean_' + Column, 'median_' + Column, 'variance_' + Column, 'range_' + Column, \
-                                        'energy_' + Column, 'rms_' + Column, ])
+def window_feature_extract(window_list, columns):
+    features_df = pd.DataFrame()
 
-    # Iterate over each window in walking_data_list and calculate features
-    for i in range(len(window_list)):
-        f_max = window_list[i][Column].max()
-        f_min = window_list[i][Column].min()
-        skew = window_list[i][Column].skew()
-        std = window_list[i][Column].std()
-        mean = window_list[i][Column].mean()
-        median = window_list[i][Column].median()
-        variance = window_list[i][Column].var()
-        f_range = f_max - f_min
-        energy = np.sum(window_list[i][Column] ** 2)
-        rms = np.sqrt(np.mean(window_list[i][Column] ** 2))
+    for column in columns:
+        column_features_df = pd.DataFrame(columns=['max_' + column, 'min_' + column, 'skew_' + column, 'std_' + column, \
+                                                'mean_' + column, 'median_' + column, 'variance_' + column, 'range_' + column, \
+                                                'energy_' + column, 'rms_' + column, ])
 
-        # Append the calculated features for the current window to the DataFrame
-        new_row = {'max_' + Column: f_max,
-                   'min_' + Column: f_min,
-                   'skew_' + Column: skew,
-                   'std_' + Column: std,
-                   'mean_' + Column: mean,
-                   'median_' + Column: median,
-                   'variance_' + Column: variance,
-                   'range_' + Column: f_range,
-                   'energy_' + Column: energy,
-                   'rms_' + Column: rms}
-        features_df.dropna()
-        features_df = pd.concat([features_df, pd.DataFrame([new_row])], ignore_index=True)
+        # Iterate over each window in window_list and calculate features
+        for i in range(len(window_list)):
+            f_max = window_list[i][column].max()
+            f_min = window_list[i][column].min()
+            skew = window_list[i][column].skew()
+            std = window_list[i][column].std()
+            mean = window_list[i][column].mean()
+            median = window_list[i][column].median()
+            variance = window_list[i][column].var()
+            f_range = f_max - f_min
+            energy = np.sum(window_list[i][column] ** 2)
+            rms = np.sqrt(np.mean(window_list[i][column] ** 2))
 
-    return features_df  # Corrected indentation for the return statement
+            # Append the calculated features for the current window to the DataFrame
+            new_row = {'max_' + column: f_max,
+                       'min_' + column: f_min,
+                       'skew_' + column: skew,
+                       'std_' + column: std,
+                       'mean_' + column: mean,
+                       'median_' + column: median,
+                       'variance_' + column: variance,
+                       'range_' + column: f_range,
+                       'energy_' + column: energy,
+                       'rms_' + column: rms}
+            column_features_df = pd.concat([column_features_df, pd.DataFrame([new_row])], ignore_index=True)
+
+        features_df = pd.concat([features_df, column_features_df], axis=1)
+
+    return features_df
 
 ############################################################################################################
 

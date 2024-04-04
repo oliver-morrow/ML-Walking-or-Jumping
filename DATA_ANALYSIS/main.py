@@ -12,7 +12,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.metrics import recall_score
 from sklearn.decomposition import PCA
 from sklearn.inspection import DecisionBoundaryDisplay
-import joblib
+from joblib import dump
 
 # READING CSV files into data frames
 file_paths = {
@@ -121,39 +121,43 @@ jumping_data_list_sma = [SMA(window, sensor_columns, window_size=5) for window i
 
 ############################################################################################################
 
-def window_feature_extract(window_list, Column):
-    features_df = pd.DataFrame(columns=['max_' + Column, 'min_' + Column, 'skew_' + Column, 'std_' + Column, \
-                                        'mean_' + Column, 'median_' + Column, 'variance_' + Column, 'range_' + Column, \
-                                        'energy_' + Column, 'rms_' + Column, ])
+def window_feature_extract(window_list, columns):
+    features_df = pd.DataFrame()
 
-    # Iterate over each window in walking_data_list and calculate features
-    for i in range(len(window_list)):
-        f_max = window_list[i][Column].max()
-        f_min = window_list[i][Column].min()
-        skew = window_list[i][Column].skew()
-        std = window_list[i][Column].std()
-        mean = window_list[i][Column].mean()
-        median = window_list[i][Column].median()
-        variance = window_list[i][Column].var()
-        f_range = f_max - f_min
-        energy = np.sum(window_list[i][Column] ** 2)
-        rms = np.sqrt(np.mean(window_list[i][Column] ** 2))
+    for column in columns:
+        column_features_df = pd.DataFrame(columns=['max_' + column, 'min_' + column, 'skew_' + column, 'std_' + column, \
+                                                'mean_' + column, 'median_' + column, 'variance_' + column, 'range_' + column, \
+                                                'energy_' + column, 'rms_' + column, ])
 
-        # Append the calculated features for the current window to the DataFrame
-        new_row = {'max_' + Column: f_max,
-                   'min_' + Column: f_min,
-                   'skew_' + Column: skew,
-                   'std_' + Column: std,
-                   'mean_' + Column: mean,
-                   'median_' + Column: median,
-                   'variance_' + Column: variance,
-                   'range_' + Column: f_range,
-                   'energy_' + Column: energy,
-                   'rms_' + Column: rms}
-        features_df = pd.concat([features_df, pd.DataFrame([new_row])], ignore_index=True)
+        # Iterate over each window in window_list and calculate features
+        for i in range(len(window_list)):
+            f_max = window_list[i][column].max()
+            f_min = window_list[i][column].min()
+            skew = window_list[i][column].skew()
+            std = window_list[i][column].std()
+            mean = window_list[i][column].mean()
+            median = window_list[i][column].median()
+            variance = window_list[i][column].var()
+            f_range = f_max - f_min
+            energy = np.sum(window_list[i][column] ** 2)
+            rms = np.sqrt(np.mean(window_list[i][column] ** 2))
 
-    return features_df  # Corrected indentation for the return statement
+            # Append the calculated features for the current window to the DataFrame
+            new_row = {'max_' + column: f_max,
+                       'min_' + column: f_min,
+                       'skew_' + column: skew,
+                       'std_' + column: std,
+                       'mean_' + column: mean,
+                       'median_' + column: median,
+                       'variance_' + column: variance,
+                       'range_' + column: f_range,
+                       'energy_' + column: energy,
+                       'rms_' + column: rms}
+            column_features_df = pd.concat([column_features_df, pd.DataFrame([new_row])], ignore_index=True)
 
+        features_df = pd.concat([features_df, column_features_df], axis=1)
+
+    return features_df
 
 def plot_features(features_df1, features_df2):
     num_columns = min(len(features_df1.columns), len(features_df2.columns))
@@ -181,8 +185,9 @@ def plot_features(features_df1, features_df2):
         plt.show()
 
 
-walking_features_df = window_feature_extract(walking_data_list_sma, 'Absolute acceleration (m/s^2)')
-jumping_features_df = window_feature_extract(jumping_data_list_sma, 'Absolute acceleration (m/s^2)')
+columns = ['Absolute acceleration (m/s^2)', 'Acceleration z (m/s^2)']
+walking_features_df = window_feature_extract(walking_data_list_sma, columns)
+jumping_features_df = window_feature_extract(jumping_data_list_sma, columns)
 walking_features_df['label'] = 0.0
 jumping_features_df['label'] = 1.0
 
@@ -206,18 +211,12 @@ labels = all_features_df['label']
 X_train, X_test, y_train, y_test = \
     train_test_split(data, labels, test_size=0.1, random_state=0)
 
-y_train = np.ravel(y_train)
-y_test = np.ravel(y_test)
 scaler = StandardScaler()
-
 
 l_reg = LogisticRegression(max_iter=10000)
 clf = make_pipeline(StandardScaler(), l_reg)
 
 clf.fit(X_train, y_train)
-
-print(y_train)
-print(y_test)
 
 # Predictions
 y_pred = clf.predict(X_test)
@@ -231,22 +230,23 @@ print('Accuracy:', accuracy)
 # print('Recall:', recall)
 
 # Confusion matrix
-# cm = confusion_matrix(y_test, y_pred)
-# cm_display = ConfusionMatrixDisplay(cm).plot()
-# plt.show()
+cm = confusion_matrix(y_test, y_pred)
+cm_display = ConfusionMatrixDisplay(cm).plot()
+plt.show()
 
-# # Plotting the ROC curve
-# y_clf_prob = model.predict_proba(X_test)
-# fpr, tpr, _ = roc_curve(y_test, y_clf_prob[:, 1], pos_label=model.classes_[1])
-# roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
-# plt.show()
+# Plotting the ROC curve
+y_clf_prob = clf.predict_proba(X_test)
+fpr, tpr, _ = roc_curve(y_test, y_clf_prob[:, 1], pos_label=clf.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+plt.show()
 
-# # calculating AUC
-# auc = roc_auc_score(y_test, y_clf_prob[:, 1])
-# print('AUC:', auc)
+# calculating AUC
+auc = roc_auc_score(y_test, y_clf_prob[:, 1])
+print('AUC:', auc)
 
 
-# Save the model to a joblib
-joblib.dump(clf, 'model.joblib')
+# Save the model to a file
+dump(clf, 'model.joblib')
 
 # plot_features(walking_features_df, jumping_features_df)
+

@@ -100,6 +100,15 @@ with h5py.File('data.h5', 'w') as f:
 
     f.close()
 
+with h5py.File('data.h5', 'r') as f:
+    # Access the data
+    oliver_walking_data = f['/oliver/walking'][()]
+    oliver_jumping_data = f['/oliver/jumping'][()]
+    matthew_walking_data = f['/matthew/walking'][()]
+    matthew_jumping_data = f['/matthew/jumping'][()]
+    daniel_walking_data = f['/daniel/walking'][()]
+    daniel_jumping_data = f['/daniel/jumping'][()]
+
 ############################################################################################################
 # Moving average filter
 def SMA(data, columns, window_size):

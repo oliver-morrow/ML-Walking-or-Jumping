@@ -31,7 +31,6 @@ def label_data(data_fp, label):
 
     return df
 
-
 oliver_walking_labeled = label_data(file_paths['Oliver'][0], 0.0)
 matthew_walking_labeled = label_data(file_paths['Matthew'][0], 0.0)
 daniel_walking_labeled = label_data(file_paths['Daniel'][0], 0.0)
@@ -114,7 +113,6 @@ def SMA(data, columns, window_size):
         smoothed_data[col] = smoothed_col
 
     return smoothed_data
-
 
 sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)', 'Absolute acceleration (m/s^2)']
 
@@ -249,7 +247,25 @@ print('AUC:', auc)
 
 
 # Save the model to a file
+from joblib import dump
 dump(clf, 'model.joblib')
 
 # plot_features(walking_features_df, jumping_features_df)
 
+pca = PCA(n_components=2)
+pca_pipe = make_pipeline(StandardScaler(), pca)
+X_train_pca = pca_pipe.fit_transform(X_train)
+X_test_pca = pca_pipe.fit_transform(X_test)
+
+clf = make_pipeline(LogisticRegression(max_iter=10000))
+clf.fit(X_train_pca, y_train)
+
+disp = DecisionBoundaryDisplay.from_estimator(
+    clf, X_train_pca, response_method='predict', xlabel='X1', ylabel='X2', alpha=0.5,
+)
+
+label_mapping = {'Walking': 0, 'Jumping': 1}
+y_train_numeric = y_train.map(label_mapping)
+
+disp.ax_.scatter(X_train_pca[:, 0], X_train_pca[:, 1], c=y_train_numeric)
+plt.show()

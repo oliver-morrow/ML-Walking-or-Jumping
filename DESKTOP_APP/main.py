@@ -109,9 +109,6 @@ class CSVClassifierApp(QMainWindow):
         self.data_sma = data_sma
         columns = ['Absolute acceleration (m/s^2)', 'Acceleration z (m/s^2)']
         data_features = window_feature_extract(data_sma, columns)
-        # data_features['label'] = np.nan
-        # scaler = StandardScaler()
-        # data_normalized = pd.DataFrame(scaler.fit_transform(data_features.drop(columns=['label'])), columns=data_features.drop(columns=['label']).columns)
         model = joblib.load('model.joblib')
         data_features['label'] = model.predict(data_features)
         

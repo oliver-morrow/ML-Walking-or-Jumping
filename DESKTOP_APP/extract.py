@@ -34,23 +34,33 @@ def SMA(data, columns, window_size):
 
 def window_feature_extract(window_list, columns):
     features_df = pd.DataFrame()
-
     for column in columns:
+        # Create a new DataFrame to store the calculated features for the current column
         column_features_df = pd.DataFrame(columns=['max_' + column, 'min_' + column, 'skew_' + column, 'std_' + column, \
                                                 'mean_' + column, 'median_' + column, 'variance_' + column, 'range_' + column, \
                                                 'energy_' + column, 'rms_' + column, ])
 
         # Iterate over each window in window_list and calculate features
         for i in range(len(window_list)):
+            # Calculate the maximum value of the current column in the window
             f_max = window_list[i][column].max()
+            # Calculate the minimum value of the current column in the window
             f_min = window_list[i][column].min()
+            # Calculate the skewness of the current column in the window
             skew = window_list[i][column].skew()
+            # Calculate the standard deviation of the current column in the window
             std = window_list[i][column].std()
+            # Calculate the mean of the current column in the window
             mean = window_list[i][column].mean()
+            # Calculate the median of the current column in the window
             median = window_list[i][column].median()
+            # Calculate the variance of the current column in the window
             variance = window_list[i][column].var()
+            # Calculate the range of the current column in the window
             f_range = f_max - f_min
+            # Calculate the energy of the current column in the window
             energy = np.sum(window_list[i][column] ** 2)
+            # Calculate the root mean square of the current column in the window
             rms = np.sqrt(np.mean(window_list[i][column] ** 2))
 
             # Append the calculated features for the current window to the DataFrame
@@ -66,6 +76,7 @@ def window_feature_extract(window_list, columns):
                        'rms_' + column: rms}
             column_features_df = pd.concat([column_features_df, pd.DataFrame([new_row])], ignore_index=True)
 
+        # Concatenate the features DataFrame for the current column with the overall features DataFrame
         features_df = pd.concat([features_df, column_features_df], axis=1)
 
     return features_df

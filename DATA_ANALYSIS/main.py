@@ -64,6 +64,7 @@ walking_data_list = split_data(walking_data_list)
 jumping_data_list = pd.concat([oliver_jumping_labeled, matthew_jumping_labeled])
 jumping_data_list = split_data(jumping_data_list)
 
+
 # Append lists
 data_list = walking_data_list + jumping_data_list
 train, test = train_test_split(data_list, test_size=0.1, shuffle=True)
@@ -120,7 +121,55 @@ sensor_columns = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Accelerat
 walking_data_list_sma = [SMA(window, sensor_columns, window_size=5) for window in walking_data_list]
 jumping_data_list_sma = [SMA(window, sensor_columns, window_size=5) for window in jumping_data_list]
 
+# def plot_acceleration_data(window, window_index):
+#     plt.figure(figsize=(14, 6))
+    
+#     # Ensure the window is sorted by 'Time (s)' to avoid crisscross lines
+#     window = window.sort_values(by='Time (s)')
+    
+#     time = window['Time (s)']
+#     acc_x = window['Acceleration x (m/s^2)']
+#     acc_y = window['Acceleration y (m/s^2)']
+#     acc_z = window['Acceleration z (m/s^2)']
+    
+#     plt.plot(time, acc_x, label='Acceleration x (m/s^2)')
+#     plt.plot(time, acc_y, label='Acceleration y (m/s^2)')
+#     plt.plot(time, acc_z, label='Acceleration z (m/s^2)')
+    
+#     plt.title(f'Window {window_index}: Acceleration Data')
+#     plt.xlabel('Time (s)')
+#     plt.ylabel('Acceleration (m/s^2)')
+#     plt.legend()
+#     plt.show()
 
+# # Plot the first three windows from the walking data list
+# for i, window in enumerate(walking_data_list_sma[:3]):
+#     plot_acceleration_data(window, i+1)
+
+# def plot_all_windows_combined(windows, sensor_columns):
+#     plt.figure(figsize=(18, 12))
+#     colors = ['r', 'g', 'b']  # Colors for x, y, z axes
+#     labels = ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)']
+    
+#     # Create a plot for each axis
+#     for i, col in enumerate(sensor_columns):
+#         plt.subplot(3, 1, i+1)
+#         for window in windows:
+#             if 'Time (s)' in window.columns and col in window.columns:
+#                 # Ensure the window is sorted by 'Time (s)'
+#                 window_sorted = window.sort_values(by='Time (s)')
+#                 plt.plot(window_sorted['Time (s)'], window_sorted[col], color=colors[i], alpha=0.5)
+                
+#         plt.title(labels[i])
+#         plt.xlabel('Time (s)')
+#         plt.ylabel('Acceleration (m/s^2)')
+#         plt.grid(True)
+    
+#     plt.tight_layout()
+#     plt.show()
+
+# # Assuming 'walking_data_list_sma' contains your smoothed windows
+# plot_all_windows_combined(walking_data_list, ['Acceleration x (m/s^2)', 'Acceleration y (m/s^2)', 'Acceleration z (m/s^2)'])
 ############################################################################################################
 
 def window_feature_extract(window_list, columns):
@@ -216,7 +265,6 @@ scaler = StandardScaler()
 
 l_reg = LogisticRegression(max_iter=10000)
 clf = make_pipeline(StandardScaler(), l_reg)
-
 clf.fit(X_train, y_train)
 
 # Predictions
@@ -224,11 +272,11 @@ y_pred = clf.predict(X_test)
 
 # Evaluate the model
 accuracy = accuracy_score(y_test, y_pred)
-# recall = recall_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred, pos_label='Jumping')
 
 # Print accuracy and recall
 print('Accuracy:', accuracy)
-# print('Recall:', recall)
+print('Recall:', recall)
 
 # Confusion matrix
 cm = confusion_matrix(y_test, y_pred)
@@ -245,12 +293,11 @@ plt.show()
 auc = roc_auc_score(y_test, y_clf_prob[:, 1])
 print('AUC:', auc)
 
-
 # Save the model to a file
 from joblib import dump
 dump(clf, 'model.joblib')
 
-# plot_features(walking_features_df, jumping_features_df)
+plot_features(walking_features_df, jumping_features_df)
 
 pca = PCA(n_components=2)
 pca_pipe = make_pipeline(StandardScaler(), pca)

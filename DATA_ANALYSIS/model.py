@@ -238,7 +238,7 @@ from joblib import dump
 # Save to DESKTOP_APP folder
 dump(clf, '../DESKTOP_APP/model.joblib')
 
-# plot_features(walking_features_df, jumping_features_df)
+plot_features(walking_features_df, jumping_features_df)
 
 pca = PCA(n_components=2)
 pca_pipe = make_pipeline(StandardScaler(), pca)

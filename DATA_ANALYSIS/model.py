@@ -59,10 +59,10 @@ def split_data(df, time='Time (s)', window_size=5):
 
 ############################################################################################################
 
-walking_data_list = pd.concat([oliver_walking_labeled, matthew_walking_labeled])
+walking_data_list = pd.concat([oliver_walking_labeled, matthew_walking_labeled, daniel_walking_labeled])
 walking_data_list = split_data(walking_data_list)
 
-jumping_data_list = pd.concat([oliver_jumping_labeled, matthew_jumping_labeled])
+jumping_data_list = pd.concat([oliver_jumping_labeled, matthew_jumping_labeled, daniel_jumping_labeled])
 jumping_data_list = split_data(jumping_data_list)
 
 # Append lists

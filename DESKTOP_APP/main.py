@@ -1,3 +1,7 @@
+'''
+REFER TO THE README.MD FOR RUNNING INSTRUCTIONS
+'''
+
 import sys
 import pandas as pd
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QDialog, 
